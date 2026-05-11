@@ -1,0 +1,71 @@
+---
+// src/pages/admin/berita/index.astro
+import AdminShell from '../../../layouts/AdminShell.astro';
+---
+<AdminShell title="Manajemen Berita" activePage="berita">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h5 class="mb-0">Berita & Pengumuman</h5>
+    <a href="/admin/berita/tambah" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Tambah Berita</a>
+  </div>
+  <div class="row g-3" id="news-grid">
+    <div class="col-12 text-center py-4 text-muted">Memuat...</div>
+  </div>
+  <nav class="mt-3 d-flex justify-content-end gap-2">
+    <button id="btn-prev" class="btn btn-sm btn-outline-secondary" disabled>‹</button>
+    <button id="btn-next" class="btn btn-sm btn-outline-secondary" disabled>›</button>
+  </nav>
+</AdminShell>
+
+<script>
+  import { apiFetch } from '../../../lib/api';
+  let page = 1;
+
+  async function load(p = 1) {
+    try {
+      const data = await apiFetch<any>(`/api/v1/news/?page=${p}&limit=9`);
+      const grid = document.getElementById('news-grid');
+      if (!grid) return;
+
+      grid.innerHTML = data.data.map((n: any) => `
+        <div class="col-md-4">
+          <div class="card h-100 border-0 shadow-sm overflow-hidden">
+            ${n.thumbnailUrl ? `<img src="${n.thumbnailUrl}" class="card-img-top" style="height:160px;object-fit:cover" alt="">` : '<div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height:160px"><i class="bi bi-image text-muted fs-3"></i></div>'}
+            <div class="card-body">
+              <h6 class="card-title fw-bold mb-1 text-truncate">${n.title}</h6>
+              <small class="text-muted">${new Date(n.publishedDate).toLocaleDateString('id-ID')}</small>
+            </div>
+            <div class="card-footer bg-white border-0 d-flex gap-2 pb-3">
+              <a href="/admin/berita/${n.id}" class="btn btn-sm btn-outline-primary flex-fill">Edit</a>
+              <button class="btn btn-sm btn-outline-danger flex-fill btn-delete" data-id="${n.id}">Hapus</button>
+            </div>
+          </div>
+        </div>`).join('') || '<div class="col-12 text-center text-muted py-4">Belum ada berita</div>';
+
+      const prevBtn = document.getElementById('btn-prev') as HTMLButtonElement;
+      const nextBtn = document.getElementById('btn-next') as HTMLButtonElement;
+      if (prevBtn) prevBtn.disabled = p <= 1;
+      if (nextBtn) nextBtn.disabled = data.data.length < 9;
+      page = p;
+
+      document.querySelectorAll('.btn-delete').forEach(btn =>
+        btn.addEventListener('click', async (e) => {
+          const target = e.currentTarget as HTMLButtonElement;
+          if (!confirm('Hapus berita ini?')) return;
+          try {
+            await apiFetch(`/api/v1/news/${target.dataset.id}`, { method: 'DELETE' });
+            load(page);
+          } catch (err) {
+            alert('Gagal menghapus berita');
+          }
+        }));
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  document.getElementById('btn-prev')?.addEventListener('click', () => load(page - 1));
+  document.getElementById('btn-next')?.addEventListener('click', () => load(page + 1));
+  
+  document.addEventListener('DOMContentLoaded', () => load(1));
+  load(1);
+</script>

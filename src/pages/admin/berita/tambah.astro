@@ -1,0 +1,81 @@
+---
+// src/pages/admin/berita/tambah.astro
+import AdminShell from '../../../layouts/AdminShell.astro';
+---
+<AdminShell title="Tambah Berita" activePage="berita">
+  <div class="mb-3"><a href="/admin/berita" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Kembali</a></div>
+  <div class="card border-0 shadow-sm" style="max-width:760px">
+    <div class="card-body">
+      <div id="form-alert"></div>
+      <form id="news-form">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Judul</label>
+          <input type="text" name="title" class="form-control" required placeholder="Judul berita..." />
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Thumbnail</label>
+          <input type="file" id="thumbnail-file" class="form-control" accept="image/*" />
+          <input type="hidden" name="thumbnailUrl" />
+          <div id="upload-status" class="small text-muted mt-1 d-none">Mengunggah...</div>
+          <img id="thumbnail-preview" src="" class="mt-2 rounded d-none" style="height:160px;width:100%;object-fit:cover" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Konten</label>
+          <textarea name="content" class="form-control" rows="10" required placeholder="Tulis berita di sini..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" id="btn-save">Simpan Berita</button>
+      </form>
+    </div>
+  </div>
+</AdminShell>
+
+<script>
+  import { apiFetch, apiUpload } from '../../../lib/api';
+
+  document.getElementById('thumbnail-file')?.addEventListener('change', async (e) => {
+    const target = e.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (!file) return;
+    
+    const status = document.getElementById('upload-status');
+    if (status) status.classList.remove('d-none');
+
+    try {
+      const result = await apiUpload('news', file);
+      (document.querySelector('[name=thumbnailUrl]') as HTMLInputElement).value = result.url;
+      const preview = document.getElementById('thumbnail-preview') as HTMLImageElement;
+      if (preview) {
+        preview.src = result.url;
+        preview.classList.remove('d-none');
+      }
+    } catch (err) {
+      alert('Gagal mengunggah gambar');
+    } finally {
+      if (status) status.classList.add('d-none');
+    }
+  });
+
+  document.getElementById('news-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const btn = document.getElementById('btn-save') as HTMLButtonElement;
+    btn.disabled = true;
+    const alertEl = document.getElementById('form-alert');
+    if (!alertEl) return;
+
+    try {
+      await apiFetch('/api/v1/news/', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: form.title.value,
+          content: form.content.value,
+          thumbnailUrl: (form.querySelector('[name=thumbnailUrl]') as HTMLInputElement).value || undefined,
+        }),
+      });
+      window.location.href = '/admin/berita';
+    } catch (err: any) {
+      alertEl.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+      btn.disabled = false;
+    }
+  });
+</script>

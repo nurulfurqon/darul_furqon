@@ -1,0 +1,75 @@
+---
+// src/pages/ppdb/sukses.astro
+import MainLayout from '../../layouts/MainLayout.astro';
+import Navbar from '../../components/Navbar.astro';
+import Footer from '../../components/Footer.astro';
+---
+<MainLayout title="Pendaftaran Berhasil">
+  <Navbar activePage="ppdb" slot="navbar" />
+
+  <section class="ppdb-hero">
+    <div class="ppdb-overlay"></div>
+    <div class="ppdb-content">
+      <span class="hero-badge">Portal PPDB Online</span>
+      <h1>Pendaftaran Berhasil</h1>
+      <p>Data pendaftaran calon siswa telah berhasil dikirim.</p>
+    </div>
+  </section>
+
+  <section class="ppdb-section">
+    <div class="ppdb-form-card success-card">
+      <div class="success-icon">
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+
+      <div class="success-content">
+        <h2>Pendaftaran Berhasil Dikirim</h2>
+        <p>
+          Terima kasih telah melakukan pendaftaran di
+          Darul - Furqon.
+          Data Anda sedang dalam proses verifikasi admin.
+        </p>
+      </div>
+
+      <div class="registration-box">
+        <span>Nomor Registrasi</span>
+        <h3 id="reg-number">-</h3>
+      </div>
+
+      <div class="status-box">
+        <div class="status-item">
+          <i class="bi bi-check-circle-fill"></i>
+          <span>Formulir Terkirim</span>
+        </div>
+        <div class="status-item waiting">
+          <i class="bi bi-hourglass-split"></i>
+          <span>Menunggu Verifikasi</span>
+        </div>
+      </div>
+
+      <div class="success-info">
+        <h4>Informasi Selanjutnya</h4>
+        <ul>
+          <li>Admin akan memverifikasi data pendaftaran Anda.</li>
+          <li>Informasi hasil seleksi akan dikirim melalui WhatsApp dan Email.</li>
+          <li>Simpan nomor registrasi untuk proses selanjutnya.</li>
+        </ul>
+      </div>
+
+      <div class="success-action">
+        <a href="/" class="btn-submit">Kembali ke Beranda</a>
+      </div>
+    </div>
+  </section>
+
+  <Footer slot="footer" />
+</MainLayout>
+
+<script>
+  const reg = JSON.parse(sessionStorage.getItem('ppdbRegistration') || '{}');
+  const el = document.getElementById('reg-number');
+  if (el && reg.registrationNumber) el.textContent = reg.registrationNumber;
+  
+  // Clear session storage after success
+  sessionStorage.removeItem('ppdbRegistration');
+</script>

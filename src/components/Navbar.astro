@@ -1,0 +1,22 @@
+---
+// src/components/Navbar.astro
+interface Props {
+  activePage?: string;
+}
+const { activePage } = Astro.props;
+---
+<header>
+  <nav class="navbar">
+    <div class="logo">
+      <div class="logo-box"><img src="/assets/icon/logo_df.svg" alt="Logo" /></div>
+      <a href="/" class="logo-text"><h2>Darul - Furqon</h2></a>
+    </div>
+    <ul class="nav-links">
+      <li><a href="/" class={activePage === 'beranda' ? 'active' : ''}>Beranda</a></li>
+      <li><a href="/profil-program" class={activePage === 'profil' ? 'active' : ''}>Profil</a></li>
+      <li><a href="/ppdb" class={activePage === 'ppdb' ? 'active' : ''}>Program</a></li>
+      <li><a href="/galeri-berita" class={activePage === 'galeri' ? 'active' : ''}>Galeri</a></li>
+    </ul>
+    <a href="/login" class="btn-ppdb">Daftar Sekarang (PPDB)</a>
+  </nav>
+</header>

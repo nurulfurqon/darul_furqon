@@ -1,0 +1,113 @@
+---
+// src/pages/login.astro
+import MainLayout from '../layouts/MainLayout.astro';
+---
+<MainLayout title="Login">
+  <section class="login-page">
+    <div class="login-left">
+      <a href="/" class="back-btn"><i class="bi bi-arrow-left"></i></a>
+      <div class="overlay"></div>
+      <div class="left-content">
+        <div class="logo-area">
+          <div class="logo-box"><img src="/assets/icon/logo_df.svg" alt=""></div>
+          <h2>Darul - Furqon</h2>
+        </div>
+        <span class="badge-school">Portal PPDB Online</span>
+        <h1>Selamat Datang di Portal PPDB</h1>
+        <p>
+          Bergabunglah bersama sekolah Islam modern
+          yang membangun generasi Qurani, berakhlak mulia,
+          dan siap menghadapi masa depan.
+        </p>
+
+      </div>
+    </div>
+
+    <div class="login-right">
+      <div class="auth-card">
+        <div class="auth-tabs">
+          <button class="tab active">Sign In</button>
+          <a href="/register" class="tab text-decoration-none text-center pt-2">Sign Up</a>
+        </div>
+
+        <div class="auth-header">
+          <h2>Masuk Akun</h2>
+          <p>Silakan login untuk melanjutkan pendaftaran PPDB.</p>
+        </div>
+
+        <div id="login-error" class="alert alert-danger d-none"></div>
+
+        <form id="login-form">
+          <div class="input-group-custom">
+            <label>Email</label>
+            <div class="input-box">
+              <i class="bi bi-envelope"></i>
+              <input type="email" name="email" required placeholder="Masukkan email">
+            </div>
+          </div>
+
+          <div class="input-group-custom">
+            <label>Password</label>
+            <div class="input-box">
+              <i class="bi bi-lock"></i>
+              <input type="password" name="password" required placeholder="Masukkan password">
+            </div>
+          </div>
+
+          <div class="auth-option">
+            <div class="remember">
+              <input type="checkbox">
+              <span>Ingat saya</span>
+            </div>
+            <a href="#">Lupa Password?</a>
+          </div>
+
+          <button type="submit" class="btn-login border-0 w-100" id="btn-login">Masuk</button>
+
+          <div class="switch-auth">
+            Belum punya akun?
+            <a href="/register">Daftar sekarang</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+</MainLayout>
+
+<script>
+  import { login } from '../lib/auth';
+
+  // Already logged in → redirect
+  if (typeof localStorage !== 'undefined' && localStorage.getItem('accessToken')) {
+    window.location.href = '/admin';
+  }
+
+  document.getElementById('login-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const btn = document.getElementById('btn-login') as HTMLButtonElement;
+    const errEl = document.getElementById('login-error');
+    
+    if (btn) btn.disabled = true;
+    if (errEl) {
+      errEl.textContent = '';
+      errEl.classList.add('d-none');
+    }
+
+    try {
+      const data = await login(form.email.value, form.password.value);
+      const redirect = new URLSearchParams(window.location.search).get('redirect');
+      if (data.user.role === 'ADMIN') {
+        window.location.href = redirect || '/admin';
+      } else {
+        window.location.href = redirect || '/ppdb/daftar';
+      }
+    } catch (err: any) {
+      if (errEl) {
+        errEl.textContent = err.message;
+        errEl.classList.remove('d-none');
+      }
+      if (btn) btn.disabled = false;
+    }
+  });
+</script>

@@ -1,0 +1,162 @@
+---
+// src/pages/galeri-berita.astro
+import MainLayout from '../layouts/MainLayout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+---
+<MainLayout title="Galeri & Berita">
+  <Navbar activePage="galeri" slot="navbar" />
+
+  <!-- ================= HERO ================= -->
+  <section class="galeri-hero">
+    <img src="/assets/img/BG_Sekolah.svg" alt="Gedung Darul Furqon" class="hero-bg">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <span class="hero-badge">Informasi Terkini</span>
+      <h1>Galeri & Berita Terbaru</h1>
+      <p>
+        Ikuti perkembangan aktivitas, prestasi, dan momen
+        berharga keluarga besar Darul - Furqon setiap harinya.
+      </p>
+    </div>
+  </section>
+
+  <!-- ================= GALERI ================= -->
+  <section class="galeri-section">
+    <div class="container">
+      <div class="galeri-wrapper">
+        <div class="galeri-left">
+          <div class="section-title">
+            <div>
+              <h2>Galeri Foto Kegiatan</h2>
+              <p>Momen-momen inspiratif dalam proses belajar dan berbudaya.</p>
+            </div>
+          </div>
+          <div id="galeri-list" class="galeri-grid">
+            <!-- Dynamic content -->
+            <div class="col-12 text-center py-5">
+              <div class="spinner-border text-success" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar-card">
+          <div class="search-box">
+            <h3>Cari Berita</h3>
+            <div class="search-input">
+              <input type="text" id="news-search" placeholder="Masukkan kata kunci...">
+              <button id="btn-search"><i class="bi bi-search"></i></button>
+            </div>
+          </div>
+          <div class="download-card">
+            <h3><i class="bi bi-folder2-open"></i> Unduh Dokumen</h3>
+            <!-- Documents can be static for now or fetched if API exists -->
+            <div class="download-item">
+              <div class="download-left">
+                <div class="download-icon red"></div>
+                <div>
+                  <h4>Brosur Sekolah</h4>
+                  <span>PDF • 4.2 MB</span>
+                </div>
+              </div>
+              <i class="bi bi-download"></i>
+            </div>
+            <button class="btn-admin">Hubungi Admisi</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= BERITA ================= -->
+  <section class="berita-modern">
+    <div class="container">
+      <div class="berita-header">
+        <h2>Berita & Pengumuman</h2>
+      </div>
+      <div id="berita-list">
+        <!-- Dynamic content -->
+        <div class="col-12 text-center py-5">
+          <div class="spinner-border text-success" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </div>
+      <div class="load-more" id="load-more-container" style="display: none;">
+        <button id="btn-load-more">Muat Berita Lainnya</button>
+      </div>
+    </div>
+  </section>
+
+  <Footer slot="footer" />
+</MainLayout>
+
+<script>
+  import { apiFetch } from '../lib/api';
+
+  let newsPage = 1;
+
+  async function loadNews(page = 1, search = '') {
+    try {
+      const data = await apiFetch(`/api/v1/news/?page=${page}&limit=6${search ? `&search=${search}` : ''}`);
+      const container = document.getElementById('berita-list');
+      if (!container) return;
+
+      const html = data.data.map(n => `
+        <div class="berita-modern-card">
+          <div class="berita-image" style="${n.thumbnailUrl ? `background-image: url('${n.thumbnailUrl}'); background-size: cover;` : `background: #eee;`}"></div>
+          <div class="berita-content">
+            <span class="kategori">${n.category || 'UMUM'}</span>
+            <small>${new Date(n.publishedDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</small>
+            <h3>${n.title}</h3>
+            <p>${n.content.substring(0, 150)}...</p>
+            <a href="#">Baca Selengkapnya →</a>
+          </div>
+        </div>
+      `).join('');
+
+      if (page === 1) container.innerHTML = html || '<div class="col-12 text-center">Tidak ada berita ditemukan.</div>';
+      else container.insertAdjacentHTML('beforeend', html);
+
+      const loadMoreBtn = document.getElementById('load-more-container');
+      if (loadMoreBtn) loadMoreBtn.style.display = data.data.length < 6 ? 'none' : 'block';
+      newsPage = page;
+    } catch (err) {
+      const container = document.getElementById('berita-list');
+      if (container) container.innerHTML = '<div class="col-12 text-center text-danger">Gagal memuat berita.</div>';
+    }
+  }
+
+  async function loadGallery() {
+    try {
+      const data = await apiFetch('/api/v1/gallery/');
+      const container = document.getElementById('galeri-list');
+      if (!container) return;
+      if (!data.data || data.data.length === 0) {
+        container.innerHTML = '<div class="col-12 text-center">Belum ada foto galeri.</div>';
+        return;
+      }
+      container.innerHTML = data.data.slice(0, 4).map(g => `
+        <div class="galeri-item" style="background-image: url('${g.fileUrl}'); background-size: cover; background-position: center;"></div>
+      `).join('');
+    } catch {
+      const container = document.getElementById('galeri-list');
+      if (container) container.innerHTML = '<div class="col-12 text-center text-danger">Gagal memuat galeri.</div>';
+    }
+  }
+
+  document.getElementById('btn-load-more')?.addEventListener('click', () => loadNews(newsPage + 1));
+  document.getElementById('btn-search')?.addEventListener('click', () => {
+    const search = (document.getElementById('news-search') as HTMLInputElement).value;
+    loadNews(1, search);
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadNews();
+    loadGallery();
+  });
+  loadNews();
+  loadGallery();
+</script>

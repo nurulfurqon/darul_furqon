@@ -1,0 +1,136 @@
+---
+// src/pages/admin/galeri/index.astro
+import AdminShell from '../../../layouts/AdminShell.astro';
+---
+<AdminShell title="Galeri" activePage="galeri">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h5 class="mb-0">Galeri Media</h5>
+    <button class="btn btn-primary btn-sm" id="btn-add"><i class="bi bi-plus-lg me-1"></i>Tambah Media</button>
+  </div>
+  <div class="row g-3" id="gallery-grid">
+    <div class="col-12 text-center py-4 text-muted">Memuat...</div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal fade" id="galleryModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"><h6 class="modal-title">Tambah Media</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <div class="mb-3"><label class="form-label">Judul Aktivitas</label><input type="text" id="g-title" class="form-control" required /></div>
+          <div class="mb-3">
+            <label class="form-label">Tipe Media</label>
+            <select id="g-type" class="form-select">
+              <option value="PHOTO">Foto</option>
+              <option value="VIDEO">Video</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">File</label>
+            <input type="file" id="g-file" class="form-control" />
+            <input type="hidden" id="g-url" />
+            <div id="g-preview-container" class="mt-2 d-none">
+              <img id="g-img-preview" src="" class="img-fluid rounded d-none" style="max-height:200px" />
+              <video id="g-vid-preview" src="" class="img-fluid rounded d-none" controls style="max-height:200px"></video>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+          <button id="btn-save-gallery" class="btn btn-primary">Simpan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</AdminShell>
+
+<script>
+  import { apiFetch, apiUpload } from '../../../lib/api';
+  
+  // @ts-ignore
+  let modal: any;
+
+  async function load() {
+    try {
+      const data = await apiFetch<any>('/api/v1/gallery/');
+      const grid = document.getElementById('gallery-grid');
+      if (!grid) return;
+
+      grid.innerHTML = (data.data ?? data).map((g: any) => `
+        <div class="col-md-3">
+          <div class="card border-0 shadow-sm h-100">
+            ${g.mediaType === 'PHOTO' 
+              ? `<img src="${g.fileUrl}" class="card-img-top" style="height:160px;object-fit:cover">`
+              : `<div class="card-img-top bg-dark d-flex align-items-center justify-content-center" style="height:160px"><i class="bi bi-play-circle text-white fs-1"></i></div>`
+            }
+            <div class="card-body p-2 text-center">
+              <small class="fw-bold d-block text-truncate">${g.activityTitle}</small>
+              <button class="btn btn-sm btn-outline-danger w-100 mt-2 btn-del" data-id="${g.id}">Hapus</button>
+            </div>
+          </div>
+        </div>`).join('') || '<div class="col-12 text-center text-muted py-4">Belum ada media</div>';
+
+      document.querySelectorAll('.btn-del').forEach(btn => btn.addEventListener('click', async (e) => {
+        if (!confirm('Hapus media ini?')) return;
+        const id = (e.currentTarget as HTMLButtonElement).dataset.id;
+        await apiFetch(`/api/v1/gallery/${id}`, { method: 'DELETE' });
+        load();
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  document.getElementById('btn-add')?.addEventListener('click', () => {
+    (document.getElementById('g-title') as HTMLInputElement).value = '';
+    (document.getElementById('g-url') as HTMLInputElement).value = '';
+    document.getElementById('g-preview-container')?.classList.add('d-none');
+    modal.show();
+  });
+
+  document.getElementById('g-file')?.addEventListener('change', async (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    const res = await apiUpload('gallery', file);
+    (document.getElementById('g-url') as HTMLInputElement).value = res.url;
+    
+    const container = document.getElementById('g-preview-container');
+    const imgPreview = document.getElementById('g-img-preview') as HTMLImageElement;
+    const vidPreview = document.getElementById('g-vid-preview') as HTMLVideoElement;
+    const type = (document.getElementById('g-type') as HTMLSelectElement).value;
+
+    container?.classList.remove('d-none');
+    if (type === 'PHOTO') {
+      imgPreview.src = res.url;
+      imgPreview.classList.remove('d-none');
+      vidPreview.classList.add('d-none');
+    } else {
+      vidPreview.src = res.url;
+      vidPreview.classList.remove('d-none');
+      imgPreview.classList.add('d-none');
+    }
+  });
+
+  document.getElementById('btn-save-gallery')?.addEventListener('click', async () => {
+    const body = {
+      activityTitle: (document.getElementById('g-title') as HTMLInputElement).value,
+      mediaType: (document.getElementById('g-type') as HTMLSelectElement).value,
+      fileUrl: (document.getElementById('g-url') as HTMLInputElement).value,
+    };
+
+    try {
+      await apiFetch('/api/v1/gallery/', { method: 'POST', body: JSON.stringify(body) });
+      modal.hide();
+      load();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // @ts-ignore
+    modal = new bootstrap.Modal(document.getElementById('galleryModal'));
+    load();
+  });
+  load();
+</script>

@@ -1,0 +1,170 @@
+---
+// src/pages/ppdb/daftar.astro
+import MainLayout from '../../layouts/MainLayout.astro';
+import Navbar from '../../components/Navbar.astro';
+import Footer from '../../components/Footer.astro';
+---
+<MainLayout title="Form Pendaftaran PPDB">
+  <Navbar activePage="ppdb" slot="navbar" />
+
+  <section class="ppdb-hero">
+    <div class="ppdb-overlay"></div>
+    <div class="ppdb-content">
+      <span class="hero-badge">Portal Wali Santri</span>
+      <h1>Formulir PPDB Aktif</h1>
+      <p>Silakan lanjutkan proses pengisian formulir.</p>
+    </div>
+  </section>
+
+  <section class="ppdb-section">
+    <div class="ppdb-form-card no-overlay">
+      <div class="form-header">
+        <div>
+          <h2>Formulir Pendaftaran</h2>
+          <p>Lengkapi data calon siswa dengan benar.</p>
+        </div>
+        <span>Langkah 1 dari 1</span>
+      </div>
+
+      <form class="ppdb-form" id="ppdb-form">
+        <div class="section-form-title">
+          <h3><i class="bi bi-person"></i> Data Calon Siswa</h3>
+        </div>
+
+        <div class="form-grid">
+          <div class="input-group-custom">
+            <label>Nama Lengkap</label>
+            <div class="input-box">
+              <i class="bi bi-person"></i>
+              <input type="text" name="studentFullName" required placeholder="Masukkan nama lengkap">
+            </div>
+          </div>
+
+          <div class="input-group-custom">
+            <label>NISN</label>
+            <div class="input-box">
+              <i class="bi bi-card-text"></i>
+              <input type="text" name="nisn" required placeholder="Masukkan NISN">
+            </div>
+          </div>
+
+          <div class="input-group-custom">
+            <label>Tempat Lahir</label>
+            <div class="input-box">
+              <i class="bi bi-geo-alt"></i>
+              <input type="text" name="birthPlace" required placeholder="Kota kelahiran">
+            </div>
+          </div>
+
+          <div class="input-group-custom">
+            <label>Tanggal Lahir</label>
+            <div class="input-box">
+              <i class="bi bi-calendar"></i>
+              <input type="date" name="birthDate" required>
+            </div>
+          </div>
+
+          <div class="input-group-custom">
+            <label>Jenis Kelamin</label>
+            <div class="input-box">
+              <i class="bi bi-gender-ambiguous"></i>
+              <select name="gender" required>
+                <option value="">Pilih Jenis Kelamin</option>
+                <option value="MALE">Laki-laki</option>
+                <option value="FEMALE">Perempuan</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="input-group-custom">
+            <label>Pilihan Program</label>
+            <div class="input-box">
+              <i class="bi bi-book"></i>
+              <select name="programChoice" required>
+                <option value="">Pilih Program</option>
+                <option value="PAUD">PAUD IT Darul Furqon</option>
+                <option value="SDIT">SDIT Darul Furqon</option>
+                <option value="PONDOK">Pondok Pesantren</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="input-group-custom">
+            <label>Nomor WhatsApp Orang Tua</label>
+            <div class="input-box">
+              <i class="bi bi-whatsapp"></i>
+              <input type="text" name="parentsWhatsapp" required placeholder="+62">
+            </div>
+          </div>
+
+          <div class="input-group-custom full-width">
+            <label>Alamat Lengkap</label>
+            <div class="input-box textarea-box">
+              <textarea name="domicileAddress" required placeholder="Masukkan alamat lengkap"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-form-title second-title">
+          <h3><i class="bi bi-people"></i> Data Orang Tua / Wali</h3>
+        </div>
+
+        <div class="form-grid">
+          <div class="input-group-custom">
+            <label>Nama Ayah</label>
+            <div class="input-box"><input type="text" name="fatherName" required></div>
+          </div>
+          <div class="input-group-custom">
+            <label>Nama Ibu</label>
+            <div class="input-box"><input type="text" name="motherName" required></div>
+          </div>
+          <div class="input-group-custom full-width">
+            <label>Pekerjaan Orang Tua</label>
+            <div class="input-box"><input type="text" name="parentsOccupation" required></div>
+          </div>
+        </div>
+
+        <div class="form-action">
+          <div class="action-right">
+            <button type="submit" class="btn-submit" id="btn-submit">Kirim Pendaftaran</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <Footer slot="footer" />
+</MainLayout>
+
+<script>
+  import { apiFetch } from '../../lib/api';
+
+  // Auth guard
+  if (typeof localStorage !== 'undefined' && !localStorage.getItem('accessToken')) {
+    window.location.href = '/login?redirect=/ppdb/daftar';
+  }
+
+  document.getElementById('ppdb-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const btn = document.getElementById('btn-submit') as HTMLButtonElement;
+    btn.disabled = true;
+    btn.textContent = 'Menyimpan...';
+
+    const formData = new FormData(form);
+    const payload = Object.fromEntries(formData.entries());
+
+    try {
+      const data = await apiFetch('/api/v1/registrations/', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      sessionStorage.setItem('ppdbRegistration', JSON.stringify(data));
+      window.location.href = '/ppdb/ringkasan';
+    } catch (err: any) {
+      alert('Gagal menyimpan: ' + err.message);
+      btn.disabled = false;
+      btn.textContent = 'Kirim Pendaftaran';
+    }
+  });
+</script>

@@ -1,0 +1,90 @@
+---
+// src/pages/admin/ppdb/index.astro
+import AdminShell from '../../../layouts/AdminShell.astro';
+---
+<AdminShell title="Manajemen Pendaftaran" activePage="ppdb">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h5 class="mb-0">Daftar Pendaftaran PPDB</h5>
+    <div class="d-flex gap-2">
+      <select id="filter-status" class="form-select form-select-sm">
+        <option value="">Semua Status</option>
+        <option value="DRAFT">Draft</option>
+        <option value="PENDING_VERIFICATION">Menunggu Verifikasi</option>
+        <option value="VERIFIED">Terverifikasi</option>
+        <option value="ACCEPTED">Diterima</option>
+        <option value="REJECTED">Ditolak</option>
+      </select>
+    </div>
+  </div>
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light"><tr>
+            <th>No. Daftar</th><th>Nama Siswa</th><th>Program</th>
+            <th>Status</th><th>Tanggal</th><th>Aksi</th>
+          </tr></thead>
+          <tbody id="reg-table-body"><tr><td colspan="6" class="text-center py-4 text-muted">Memuat data...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <nav class="mt-3 d-flex justify-content-between align-items-center">
+    <small id="page-info" class="text-muted"></small>
+    <div class="d-flex gap-2">
+      <button id="btn-prev" class="btn btn-sm btn-outline-secondary" disabled>‹ Sebelumnya</button>
+      <button id="btn-next" class="btn btn-sm btn-outline-secondary" disabled>Berikutnya ›</button>
+    </div>
+  </nav>
+</AdminShell>
+
+<script>
+  import { apiFetch } from '../../../lib/api';
+
+  const statusBadge: Record<string, string> = { DRAFT:'secondary', PENDING_VERIFICATION:'warning', VERIFIED:'info', ACCEPTED:'success', REJECTED:'danger' };
+  const statusLabel: Record<string, string> = { DRAFT:'Draft', PENDING_VERIFICATION:'Menunggu', VERIFIED:'Terverifikasi', ACCEPTED:'Diterima', REJECTED:'Ditolak' };
+
+  let currentPage = 1;
+  const limit = 10;
+
+  async function loadRegistrations(page = 1) {
+    const status = (document.getElementById('filter-status') as HTMLSelectElement).value;
+    const qs = `page=${page}&limit=${limit}${status ? '&status=' + status : ''}`;
+    try {
+      const data = await apiFetch<any>(`/api/v1/registrations/?${qs}`);
+      const tbody = document.getElementById('reg-table-body');
+      if (!tbody) return;
+
+      tbody.innerHTML = data.data.length === 0
+        ? '<tr><td colspan="6" class="text-center py-4 text-muted">Tidak ada data</td></tr>'
+        : data.data.map((r: any) => `
+            <tr>
+              <td><span class="fw-medium">${r.registrationNumber ?? '-'}</span></td>
+              <td>${r.studentFullName}</td>
+              <td>${r.programChoice}</td>
+              <td><span class="badge bg-${statusBadge[r.registrationStatus] || 'secondary'}">${statusLabel[r.registrationStatus] || r.registrationStatus}</span></td>
+              <td>${new Date(r.registrationDate).toLocaleDateString('id-ID')}</td>
+              <td><a href="/admin/ppdb/${r.id}" class="btn btn-sm btn-outline-primary">Detail</a></td>
+            </tr>`).join('');
+
+      const total = data.total ?? data.data.length;
+      const info = document.getElementById('page-info');
+      if (info) info.textContent = `Halaman ${page} · ${total} data`;
+      
+      const prevBtn = document.getElementById('btn-prev') as HTMLButtonElement;
+      const nextBtn = document.getElementById('btn-next') as HTMLButtonElement;
+      if (prevBtn) prevBtn.disabled = page <= 1;
+      if (nextBtn) nextBtn.disabled = data.data.length < limit;
+      currentPage = page;
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  document.getElementById('btn-prev')?.addEventListener('click', () => loadRegistrations(currentPage - 1));
+  document.getElementById('btn-next')?.addEventListener('click', () => loadRegistrations(currentPage + 1));
+  document.getElementById('filter-status')?.addEventListener('change', () => loadRegistrations(1));
+
+  document.addEventListener('DOMContentLoaded', () => loadRegistrations(1));
+  loadRegistrations(1);
+</script>

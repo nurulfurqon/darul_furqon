@@ -1,0 +1,77 @@
+---
+// src/pages/ppdb/index.astro
+import MainLayout from '../../layouts/MainLayout.astro';
+import Navbar from '../../components/Navbar.astro';
+import Footer from '../../components/Footer.astro';
+---
+<MainLayout title="PPDB">
+  <Navbar activePage="ppdb" slot="navbar" />
+
+  <!-- ================= HERO ================= -->
+  <section class="ppdb-hero">
+    <div class="ppdb-overlay"></div>
+    <div class="ppdb-content">
+      <span class="hero-badge">TA 2026 / 2027</span>
+      <h1>Penerimaan Peserta Didik Baru (PPDB)</h1>
+      <p>
+        Bergabunglah bersama sekolah Islam modern
+        untuk membangun generasi Qurani yang unggul.
+      </p>
+    </div>
+  </section>
+
+  <!-- ================= INFO ================= -->
+  <section class="ppdb-section">
+    <div class="ppdb-form-card">
+      <!-- LOGIN OVERLAY -->
+      <div class="login-overlay">
+        <div class="overlay-card">
+          <i class="bi bi-lock-fill"></i>
+          <h3>Login Diperlukan</h3>
+          <p>
+            Silakan login terlebih dahulu
+            untuk mengakses formulir PPDB.
+          </p>
+          <a href="/login" class="btn-login-overlay">Login Sekarang</a>
+        </div>
+      </div>
+
+      <!-- HEADER (Blurred in guest view) -->
+      <div class="form-header">
+        <div>
+          <h2>Formulir Pendaftaran</h2>
+          <p>Lengkapi data calon siswa dengan benar.</p>
+        </div>
+        <span>Langkah 1 dari 3</span>
+      </div>
+
+      <!-- FORM (Blurred/Disabled) -->
+      <form class="ppdb-form" style="pointer-events: none; opacity: 0.5;">
+        <div class="form-grid">
+          <div class="input-group-custom">
+            <label>Nama Lengkap</label>
+            <div class="input-box"><input type="text" placeholder="Nama lengkap siswa"></div>
+          </div>
+          <div class="input-group-custom">
+            <label>Tanggal Lahir</label>
+            <div class="input-box"><input type="date"></div>
+          </div>
+        </div>
+        <div class="input-group-custom">
+          <label>Alamat Lengkap</label>
+          <div class="input-box textarea-box"><textarea placeholder="Masukkan alamat lengkap"></textarea></div>
+        </div>
+        <button class="btn-submit">Lanjut ke Tahap Berkas</button>
+      </form>
+    </div>
+  </section>
+
+  <Footer slot="footer" />
+</MainLayout>
+
+<script>
+  // Redirect to /ppdb/daftar if logged in
+  if (typeof localStorage !== 'undefined' && localStorage.getItem('accessToken')) {
+    window.location.href = '/ppdb/daftar';
+  }
+</script>

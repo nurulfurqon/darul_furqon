@@ -1,0 +1,132 @@
+---
+// src/pages/ppdb/ringkasan.astro
+import MainLayout from '../../layouts/MainLayout.astro';
+import Navbar from '../../components/Navbar.astro';
+import Footer from '../../components/Footer.astro';
+---
+<MainLayout title="Ringkasan Pendaftaran">
+  <Navbar activePage="ppdb" slot="navbar" />
+
+  <section class="ppdb-hero">
+    <div class="ppdb-overlay"></div>
+    <div class="ppdb-content">
+      <span class="hero-badge">Portal PPDB Online</span>
+      <h1>Review Data Pendaftaran</h1>
+      <p>Pastikan seluruh data yang telah diisi sudah benar sebelum mengirim pendaftaran final.</p>
+    </div>
+  </section>
+
+  <section class="ppdb-section">
+    <div class="ppdb-form-card no-overlay">
+      <div class="form-header">
+        <div>
+          <h2>Review Data Pendaftaran</h2>
+          <p>Periksa kembali seluruh data pendaftaran sebelum dikirim.</p>
+        </div>
+        <span>Langkah 2 dari 2</span>
+      </div>
+
+      <div class="ppdb-form">
+        <div class="summary-alert">
+          <i class="bi bi-check-circle-fill"></i>
+          <div>
+            <h4>Data Berhasil Disimpan</h4>
+            <p>Silakan lakukan pengecekan terakhir sebelum submit final.</p>
+          </div>
+        </div>
+
+        <div class="section-form-title">
+          <h3><i class="bi bi-person"></i> Data Calon Siswa</h3>
+        </div>
+
+        <div class="summary-card">
+          <div class="summary-grid">
+            <div class="summary-item">
+              <span>Nama Lengkap</span>
+              <h5 id="val-name">-</h5>
+            </div>
+            <div class="summary-item">
+              <span>NISN</span>
+              <h5 id="val-nisn">-</h5>
+            </div>
+            <div class="summary-item">
+              <span>Tempat, Tanggal Lahir</span>
+              <h5 id="val-birth">-</h5>
+            </div>
+            <div class="summary-item">
+              <span>Jenis Kelamin</span>
+              <h5 id="val-gender">-</h5>
+            </div>
+            <div class="summary-item">
+              <span>Program Pilihan</span>
+              <h5 id="val-program">-</h5>
+            </div>
+            <div class="summary-item full-width">
+              <span>Alamat Lengkap</span>
+              <h5 id="val-address">-</h5>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-form-title second-title">
+          <h3><i class="bi bi-people"></i> Data Orang Tua / Wali</h3>
+        </div>
+
+        <div class="summary-card">
+          <div class="summary-grid">
+            <div class="summary-item">
+              <span>Nama Ayah</span>
+              <h5 id="val-father">-</h5>
+            </div>
+            <div class="summary-item">
+              <span>Nama Ibu</span>
+              <h5 id="val-mother">-</h5>
+            </div>
+            <div class="summary-item">
+              <span>Pekerjaan Orang Tua</span>
+              <h5 id="val-occupation">-</h5>
+            </div>
+            <div class="summary-item">
+              <span>WhatsApp</span>
+              <h5 id="val-whatsapp">-</h5>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-action">
+          <div class="action-right">
+            <a href="/ppdb/sukses" class="btn-submit">Kirim Pendaftaran</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Footer slot="footer" />
+</MainLayout>
+
+<script>
+  const reg = JSON.parse(sessionStorage.getItem('ppdbRegistration') || '{}');
+  
+  if (!reg.id && typeof window !== 'undefined') {
+    window.location.href = '/ppdb/daftar';
+  }
+
+  const fields: Record<string, string | undefined> = {
+    'val-name': reg.studentFullName,
+    'val-nisn': reg.nisn,
+    'val-birth': `${reg.birthPlace}, ${new Date(reg.birthDate).toLocaleDateString('id-ID')}`,
+    'val-gender': reg.gender === 'MALE' ? 'Laki-laki' : 'Perempuan',
+    'val-program': reg.programChoice,
+    'val-address': reg.domicileAddress,
+    'val-father': reg.fatherName,
+    'val-mother': reg.motherName,
+    'val-occupation': reg.parentsOccupation,
+    'val-whatsapp': reg.parentsWhatsapp,
+  };
+
+  for (const [id, val] of Object.entries(fields)) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val || '-';
+  }
+</script>

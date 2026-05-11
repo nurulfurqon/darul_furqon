@@ -1,0 +1,212 @@
+---
+// src/pages/index.astro
+import MainLayout from '../layouts/MainLayout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+---
+<MainLayout title="Beranda">
+  <Navbar activePage="beranda" slot="navbar" />
+  
+  <!-- ================= HERO SECTION ================= -->
+  <section class="hero">
+    <div class="hero-text">
+      <div class="badge">
+        • Penerimaan Siswa Baru 2026/2027 Dibuka
+      </div>
+      <h1>
+        Membangun <br>
+        Generasi <br>
+        <span>Qurani</span> yang <br>
+        Berakhlak Mulia
+      </h1>
+      <p>
+        Bergabunglah bersama kami membentuk karakter islami
+        yang kuat, cerdas secara akademik, dan siap menghadapi
+        tantangan masa depan dengan nilai-nilai Al-Quran.
+      </p>
+      <div class="hero-button">
+        <a href="/login" class="btn-primary">
+          Daftar Sekarang (PPDB)
+        </a>
+        <a href="#" class="btn-secondary">
+          ▶ Video Profil
+        </a>
+      </div>
+      <div class="stats">
+        <div class="stat-item">
+          <h2>A</h2>
+          <p>Akreditasi</p>
+        </div>
+        <div class="stat-item">
+          <h2>1000+</h2>
+          <p>Alumni Sukses</p>
+        </div>
+        <div class="stat-item">
+          <h2>10+</h2>
+          <p>Ekstrakurikuler</p>
+        </div>
+      </div>
+    </div>
+    <div class="hero-image">
+      <div class="image-box">
+        <img src="/assets/img/hero-tahfidz.svg" alt="Gedung Darul Furqon" class="hero-img">
+        <div class="program-card">
+          <div class="icon"><img src="/assets/icon/quran-icon.svg" alt="Icon Tahfidz"></div>
+          <div>
+            <h4>Program Tahfidz Unggulan</h4>
+            <p>Target hafalan tiap jenjang</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SAMBUTAN ================= -->
+  <section class="sambutan">
+    <div class="foto-kepala">
+      FOTO
+    </div>
+    <div class="text-sambutan">
+      <h2>Sambutan Kepala Sekolah</h2>
+      <p>
+        Selamat datang di Darul Furqon. Kami berkomitmen mencetak generasi Qur’ani yang berkarakter, cerdas, dan berwawasan global. 
+        Semoga putra-putri Anda dapat berkembang bersama kami dalam lingkungan yang islami, mendukung, dan penuh semangat belajar.
+      </p>
+      <h4>Ust. Ahmad Fauzi, M.Pd.</h4>
+      <span>
+        Kepala Sekolah Darul - Furqon
+      </span>
+    </div>
+  </section>
+
+  <!-- ================= BERITA ================= -->
+  <section class="berita">
+    <div class="section-title">
+      <div>
+        <h2>Pengumuman & Berita</h2>
+        <p>Informasi terbaru seputar kegiatan sekolah</p>
+      </div>
+      <a href="/galeri-berita">Lihat Semua →</a>
+    </div>
+    <div id="news-list" class="row g-3">
+      <!-- Loading state or placeholder -->
+      <div class="col-12 text-center py-5">
+        <div class="spinner-border text-success" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CONTACT ================= -->
+  <section class="contact-section py-5 bg-light">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-lg-8 text-center mb-5">
+          <h2 class="fw-bold">Hubungi Kami</h2>
+          <p class="text-muted">Punya pertanyaan seputar pendaftaran atau kegiatan sekolah? Silakan hubungi kami.</p>
+        </div>
+      </div>
+      <div class="row justify-content-center">
+        <div class="col-lg-6">
+          <div id="contact-success" class="alert alert-success d-none mb-4">
+            <i class="bi bi-check-circle-fill me-2"></i> Pesan berhasil dikirim! Kami akan menghubungi Anda segera.
+          </div>
+          <form id="contact-form" class="bg-white p-4 rounded shadow-sm">
+            <div class="mb-3">
+              <label class="form-label">Nama Lengkap</label>
+              <input type="text" name="senderName" class="form-control" required />
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Email</label>
+                <input type="email" name="senderEmail" class="form-control" required />
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">WhatsApp/Telepon</label>
+                <input type="text" name="senderPhone" class="form-control" required />
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Subjek</label>
+              <input type="text" name="subject" class="form-control" required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Pesan</label>
+              <textarea name="messageContent" class="form-control" rows="5" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-success w-100 py-2 fw-bold" id="btn-send">Kirim Pesan</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Footer slot="footer" />
+</MainLayout>
+
+<script>
+  import { apiFetch } from '../lib/api';
+
+  async function loadLatestNews() {
+    try {
+      const data = await apiFetch('/api/v1/news/?page=1&limit=3');
+      const container = document.getElementById('news-list');
+      if (!container || !data.data || data.data.length === 0) {
+        if (container) container.innerHTML = '<div class="col-12 text-center">Belum ada berita.</div>';
+        return;
+      }
+      container.innerHTML = data.data.map(n => `
+        <div class="col-md-4">
+          <div class="card h-100 border-0 shadow-sm overflow-hidden" style="border-radius: 12px;">
+            ${n.thumbnailUrl ? `<img src="${n.thumbnailUrl}" class="card-img-top" style="height:180px;object-fit:cover" alt="${n.title}">` : `<div style="height:180px; background:#eee; display:flex; align-items:center; justify-content:center;"><i class="bi bi-image text-muted" style="font-size: 2rem;"></i></div>`}
+            <div class="card-body">
+              <h6 class="card-title fw-semibold mb-2">${n.title}</h6>
+              <div class="d-flex justify-content-between align-items-center mt-3">
+                <small class="text-muted">${new Date(n.publishedDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</small>
+                <a href="#" class="text-success text-decoration-none small">Baca →</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    } catch (err) {
+      const container = document.getElementById('news-list');
+      if (container) container.innerHTML = '<div class="col-12 text-center text-danger">Gagal memuat berita.</div>';
+    }
+  }
+
+  // Load news after DOM is ready
+  document.addEventListener('DOMContentLoaded', loadLatestNews);
+  // Also call it immediately in case DOM is already ready
+  loadLatestNews();
+
+  // Contact Form
+  document.getElementById('contact-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const btn = document.getElementById('btn-send') as HTMLButtonElement;
+    const successEl = document.getElementById('contact-success');
+    
+    if (btn) btn.disabled = true;
+    
+    try {
+      await apiFetch('/api/v1/contacts/', {
+        method: 'POST',
+        body: JSON.stringify({
+          senderName: (form.querySelector('[name=senderName]') as HTMLInputElement).value,
+          senderEmail: (form.querySelector('[name=senderEmail]') as HTMLInputElement).value,
+          senderPhone: (form.querySelector('[name=senderPhone]') as HTMLInputElement).value,
+          subject: (form.querySelector('[name=subject]') as HTMLInputElement).value,
+          messageContent: (form.querySelector('[name=messageContent]') as HTMLTextAreaElement).value,
+        }),
+      });
+      form.reset();
+      if (successEl) successEl.classList.remove('d-none');
+    } catch (err: any) {
+      alert('Gagal mengirim pesan: ' + err.message);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+</script>

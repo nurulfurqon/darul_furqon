@@ -1,0 +1,106 @@
+---
+// src/pages/admin/index.astro
+import AdminShell from '../../layouts/AdminShell.astro';
+---
+<AdminShell title="Dashboard" activePage="dashboard">
+  <div class="row g-4 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body d-flex align-items-center gap-3">
+          <div class="rounded-3 p-3 bg-primary bg-opacity-10"><i class="bi bi-person-lines-fill fs-4 text-primary"></i></div>
+          <div><div class="text-muted small">Total Pendaftaran</div><div id="stat-reg" class="fs-4 fw-bold">-</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body d-flex align-items-center gap-3">
+          <div class="rounded-3 p-3 bg-warning bg-opacity-10"><i class="bi bi-hourglass-split fs-4 text-warning"></i></div>
+          <div><div class="text-muted small">Perlu Verifikasi</div><div id="stat-pending" class="fs-4 fw-bold">-</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body d-flex align-items-center gap-3">
+          <div class="rounded-3 p-3 bg-success bg-opacity-10"><i class="bi bi-newspaper fs-4 text-success"></i></div>
+          <div><div class="text-muted small">Total Berita</div><div id="stat-news" class="fs-4 fw-bold">-</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body d-flex align-items-center gap-3">
+          <div class="rounded-3 p-3 bg-danger bg-opacity-10"><i class="bi bi-envelope fs-4 text-danger"></i></div>
+          <div><div class="text-muted small">Pesan Belum Dibaca</div><div id="stat-unread" class="fs-4 fw-bold">-</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white fw-semibold">Pendaftaran Terbaru</div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light"><tr>
+            <th>No. Daftar</th><th>Nama Siswa</th><th>Program</th><th>Status</th><th>Tanggal</th>
+          </tr></thead>
+          <tbody id="recent-registrations"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</AdminShell>
+
+<script>
+  import { apiFetch } from '../../lib/api';
+
+  const statusBadge: Record<string, string> = {
+    DRAFT: 'secondary', PENDING_VERIFICATION: 'warning',
+    VERIFIED: 'info', ACCEPTED: 'success', REJECTED: 'danger'
+  };
+  const statusLabel: Record<string, string> = {
+    DRAFT: 'Draft', PENDING_VERIFICATION: 'Menunggu',
+    VERIFIED: 'Terverifikasi', ACCEPTED: 'Diterima', REJECTED: 'Ditolak'
+  };
+
+  async function loadDashboard() {
+    try {
+      const [regs, news, contacts] = await Promise.all([
+        apiFetch<any>('/api/v1/registrations/?page=1&limit=100'),
+        apiFetch<any>('/api/v1/news/?page=1&limit=100'),
+        apiFetch<any>('/api/v1/contacts/?page=1&limit=100&isRead=false'),
+      ]);
+
+      const statReg = document.getElementById('stat-reg');
+      const statPending = document.getElementById('stat-pending');
+      const statNews = document.getElementById('stat-news');
+      const statUnread = document.getElementById('stat-unread');
+
+      if (statReg) statReg.textContent = regs.total ?? regs.data?.length ?? '0';
+      if (statPending) statPending.textContent = regs.data?.filter((r: any) => r.registrationStatus === 'PENDING_VERIFICATION').length ?? '0';
+      if (statNews) statNews.textContent = news.total ?? news.data?.length ?? '0';
+      if (statUnread) statUnread.textContent = contacts.total ?? contacts.data?.length ?? '0';
+
+      const recent = (regs.data ?? []).slice(0, 10);
+      const recentEl = document.getElementById('recent-registrations');
+      if (recentEl) {
+        recentEl.innerHTML = recent.map((r: any) => `
+          <tr>
+            <td><a href="/admin/ppdb/${r.id}" class="text-decoration-none fw-medium text-primary">${r.registrationNumber ?? '-'}</a></td>
+            <td>${r.studentFullName}</td>
+            <td>${r.programChoice}</td>
+            <td><span class="badge bg-${statusBadge[r.registrationStatus] || 'secondary'}">${statusLabel[r.registrationStatus] || r.registrationStatus}</span></td>
+            <td>${new Date(r.registrationDate).toLocaleDateString('id-ID')}</td>
+          </tr>
+        `).join('');
+      }
+    } catch (err) {
+      console.error('Failed to load dashboard', err);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', loadDashboard);
+  loadDashboard();
+</script>
