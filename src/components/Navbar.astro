@@ -1,0 +1,99 @@
+---
+// src/components/Navbar.astro
+interface Props {
+  activePage?: string;
+}
+const { activePage } = Astro.props;
+---
+<header>
+  <nav class="navbar">
+    <div class="logo">
+      <div class="logo-box"><img src="/assets/icon/logo_df.svg" alt="Logo" /></div>
+      <a href="/" class="logo-text"><h2>Darul - Furqon</h2></a>
+    </div>
+    <ul class="nav-links">
+      <li><a href="/" class={activePage === 'beranda' ? 'active' : ''}>Beranda</a></li>
+      <li><a href="/profil-program" class={activePage === 'profil' ? 'active' : ''}>Profil</a></li>
+      <li><a href="/ppdb" class={activePage === 'ppdb' ? 'active' : ''}>Program</a></li>
+      <li><a href="/galeri-berita" class={activePage === 'galeri' ? 'active' : ''}>Galeri</a></li>
+    </ul>
+    <div class="d-flex align-items-center gap-3">
+      <a href="/login" id="nav-ppdb-btn" class="btn-ppdb d-none d-sm-block">Daftar Sekarang (PPDB)</a>
+      <div class="vr d-none d-sm-block opacity-25" style="height: 28px; align-self: center; margin: 0 4px;"></div>
+      <div id="auth-section">
+        <a href="/login" class="nav-link fw-bold text-teal small" style="text-decoration:none">Login</a>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<script>
+  function updateNavbar() {
+    const token = localStorage.getItem('accessToken');
+    const role = localStorage.getItem('userRole');
+    const authSection = document.getElementById('auth-section');
+    const ppdbBtn = document.getElementById('nav-ppdb-btn') as HTMLAnchorElement;
+    
+    if (token) {
+      if (ppdbBtn) {
+        ppdbBtn.href = role === 'ADMIN' ? '/admin/ppdb' : '/ppdb/daftar';
+        ppdbBtn.textContent = 'Portal PPDB';
+      }
+
+      if (authSection) {
+        const isAdmin = role === 'ADMIN';
+        const name = localStorage.getItem('userName') || 'User';
+        const initial = name.charAt(0).toUpperCase();
+        
+        authSection.innerHTML = `
+          <div class="dropdown">
+            <button id="user-dropdown-btn" class="btn d-flex align-items-center gap-2 border-0 p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <div class="avatar-circle">${initial}</div>
+              <div class="d-none d-lg-block text-start">
+                <div class="fw-bold small leading-none">${name}</div>
+                <div class="text-muted" style="font-size: 0.65rem;">${role}</div>
+              </div>
+              <i class="bi bi-chevron-down small text-muted"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2" style="border-radius: 12px; min-width: 200px;">
+              <li class="px-3 py-2 border-bottom mb-2">
+                <div class="fw-bold small">${name}</div>
+                <div class="text-muted small">${role}</div>
+              </li>
+              ${isAdmin ? `<li><a class="dropdown-item py-2" href="/admin"><i class="bi bi-speedometer2 me-2 text-teal"></i>Admin Panel</a></li>` : ''}
+              <li><a class="dropdown-item py-2" href="/ppdb/daftar"><i class="bi bi-person-badge me-2 text-teal"></i>Status Pendaftaran</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><button class="dropdown-item py-2 text-danger" id="nav-logout"><i class="bi bi-box-arrow-right me-2"></i>Logout</button></li>
+            </ul>
+          </div>
+        `;
+        
+        // Manual initialization for dynamic dropdown
+        const dropdownBtn = document.getElementById('user-dropdown-btn');
+        if (dropdownBtn && (window as any).bootstrap) {
+          new (window as any).bootstrap.Dropdown(dropdownBtn);
+        }
+
+        document.getElementById('nav-logout')?.addEventListener('click', () => {
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('userRole');
+          localStorage.removeItem('userName');
+          window.location.href = '/login';
+        });
+      }
+    } else {
+      if (ppdbBtn) {
+        ppdbBtn.href = '/login';
+        ppdbBtn.textContent = 'Daftar Sekarang (PPDB)';
+      }
+      if (authSection) {
+        authSection.innerHTML = `<a href="/login" class="nav-link fw-bold text-teal small" style="text-decoration:none">Login</a>`;
+      }
+    }
+  }
+
+  // Run on mount and after navigation
+  document.addEventListener('astro:page-load', updateNavbar);
+  updateNavbar();
+</script>

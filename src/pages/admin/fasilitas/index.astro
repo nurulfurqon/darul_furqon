@@ -1,0 +1,199 @@
+---
+// src/pages/admin/fasilitas/index.astro
+import AdminShell from '../../../layouts/AdminShell.astro';
+---
+<AdminShell title="Fasilitas & Prestasi" activePage="fasilitas">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h5 class="mb-0">Fasilitas & Prestasi</h5>
+    <button class="btn btn-primary btn-sm" id="btn-add"><i class="bi bi-plus-lg me-1"></i>Tambah</button>
+  </div>
+  
+  <ul class="nav nav-tabs mb-4" id="facilityTabs">
+    <li class="nav-item">
+      <a class="nav-link active" data-cat="FACILITY" href="#">Fasilitas</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-cat="ACHIEVEMENT" href="#">Prestasi</a>
+    </li>
+  </ul>
+
+  <div class="row g-3" id="facility-grid">
+    <div class="col-12 text-center py-4 text-muted">Memuat...</div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal fade" id="facilityModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h6 class="modal-title" id="f-modal-title">Tambah Data</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="f-id" />
+          <div class="mb-3">
+            <label class="form-label">Kategori</label>
+            <select id="f-cat" class="form-select">
+              <option value="FACILITY">Fasilitas</option>
+              <option value="ACHIEVEMENT">Prestasi</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Nama</label>
+            <input type="text" id="f-name" class="form-control" required placeholder="Nama fasilitas/prestasi..." />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Deskripsi</label>
+            <textarea id="f-desc" class="form-control" rows="3" placeholder="Keterangan singkat..."></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Gambar</label>
+            <input type="file" id="f-img-file" class="form-control" accept="image/*" />
+            <input type="hidden" id="f-img-url" />
+            <img id="f-img-preview" src="" class="mt-2 rounded d-none" style="height:140px;width:100%;object-fit:cover" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+          <button id="btn-save-facility" class="btn btn-primary">Simpan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</AdminShell>
+
+<script>
+  import { apiFetch, apiUpload } from '../../../lib/api';
+  
+  let activeCategory = 'FACILITY';
+  let editingId = '';
+  // @ts-ignore
+  let modal: any;
+
+  function getModal() {
+    if (!modal) {
+      const el = document.getElementById('facilityModal');
+      // @ts-ignore
+      if (el && typeof bootstrap !== 'undefined') modal = new bootstrap.Modal(el);
+    }
+    return modal;
+  }
+
+  async function load() {
+    try {
+      const data = await apiFetch<any>(`/api/v1/facilities/?category=${activeCategory}`);
+      const grid = document.getElementById('facility-grid');
+      if (!grid) return;
+
+      const items = data.data ?? data;
+      grid.innerHTML = items.map((f: any) => `
+        <div class="col-md-4">
+          <div class="card border-0 shadow-sm h-100">
+            ${f.imageUrl ? `<img src="${f.imageUrl}" class="card-img-top" style="height:140px;object-fit:cover">` : '<div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height:140px"><i class="bi bi-image text-muted fs-3"></i></div>'}
+            <div class="card-body">
+              <h6 class="fw-bold mb-1">${f.name}</h6>
+              <p class="text-muted small mb-0">${f.description || ''}</p>
+            </div>
+            <div class="card-footer bg-white border-0 d-flex gap-2 pb-3">
+              <button class="btn btn-sm btn-outline-primary flex-fill btn-edit" data-f='${JSON.stringify(f)}'>Edit</button>
+              <button class="btn btn-sm btn-outline-danger flex-fill btn-del" data-id="${f.id}">Hapus</button>
+            </div>
+          </div>
+        </div>`).join('') || `<div class="col-12 text-center text-muted py-4">Belum ada data ${activeCategory === 'FACILITY' ? 'fasilitas' : 'prestasi'}</div>`;
+
+      document.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', (e) => {
+        const f = JSON.parse((e.currentTarget as HTMLButtonElement).dataset.f!);
+        editingId = f.id;
+        (document.getElementById('f-id') as HTMLInputElement).value = f.id;
+        (document.getElementById('f-cat') as HTMLSelectElement).value = f.category;
+        (document.getElementById('f-name') as HTMLInputElement).value = f.name;
+        (document.getElementById('f-desc') as HTMLTextAreaElement).value = f.description || '';
+        (document.getElementById('f-img-url') as HTMLInputElement).value = f.imageUrl || '';
+        
+        const preview = document.getElementById('f-img-preview') as HTMLImageElement;
+        if (f.imageUrl) {
+          preview.src = f.imageUrl;
+          preview.classList.remove('d-none');
+        } else {
+          preview.classList.add('d-none');
+        }
+        
+        document.getElementById('f-modal-title')!.textContent = 'Edit Data';
+        getModal()?.show();
+      }));
+
+      document.querySelectorAll('.btn-del').forEach(btn => btn.addEventListener('click', async (e) => {
+        if (!confirm('Hapus data ini?')) return;
+        const id = (e.currentTarget as HTMLButtonElement).dataset.id;
+        try {
+          await apiFetch(`/api/v1/facilities/${id}`, { method: 'DELETE' });
+          load();
+        } catch (err) {
+          alert('Gagal menghapus data');
+        }
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  document.querySelectorAll('#facilityTabs [data-cat]').forEach(tab => {
+    tab.addEventListener('click', (e) => {
+      e.preventDefault();
+      document.querySelectorAll('#facilityTabs .nav-link').forEach(l => l.classList.remove('active'));
+      (e.currentTarget as HTMLElement).classList.add('active');
+      activeCategory = (e.currentTarget as HTMLElement).dataset.cat!;
+      load();
+    });
+  });
+
+  document.getElementById('btn-add')?.addEventListener('click', () => {
+    editingId = '';
+    (document.getElementById('f-id') as HTMLInputElement).value = '';
+    (document.getElementById('f-name') as HTMLInputElement).value = '';
+    (document.getElementById('f-desc') as HTMLTextAreaElement).value = '';
+    (document.getElementById('f-img-url') as HTMLInputElement).value = '';
+    document.getElementById('f-img-preview')?.classList.add('d-none');
+    document.getElementById('f-modal-title')!.textContent = 'Tambah Data';
+    getModal()?.show();
+  });
+
+  document.getElementById('f-img-file')?.addEventListener('change', async (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    try {
+      const res = await apiUpload('facilities', file);
+      (document.getElementById('f-img-url') as HTMLInputElement).value = res.url;
+      const preview = document.getElementById('f-img-preview') as HTMLImageElement;
+      preview.src = res.url;
+      preview.classList.remove('d-none');
+    } catch (err) {
+      alert('Gagal mengunggah gambar');
+    }
+  });
+
+  document.getElementById('btn-save-facility')?.addEventListener('click', async () => {
+    const id = (document.getElementById('f-id') as HTMLInputElement).value;
+    const body = {
+      category: (document.getElementById('f-cat') as HTMLSelectElement).value,
+      name: (document.getElementById('f-name') as HTMLInputElement).value,
+      description: (document.getElementById('f-desc') as HTMLTextAreaElement).value || undefined,
+      imageUrl: (document.getElementById('f-img-url') as HTMLInputElement).value || undefined,
+    };
+
+    try {
+      if (id) {
+        await apiFetch(`/api/v1/facilities/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+      } else {
+        await apiFetch('/api/v1/facilities/', { method: 'POST', body: JSON.stringify(body) });
+      }
+      getModal()?.hide();
+      load();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', load);
+  load();
+</script>

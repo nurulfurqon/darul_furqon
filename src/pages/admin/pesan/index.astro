@@ -1,0 +1,108 @@
+---
+// src/pages/admin/pesan/index.astro
+import AdminShell from '../../../layouts/AdminShell.astro';
+---
+<AdminShell title="Pesan Masuk" activePage="pesan">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h5 class="mb-0">Pesan Masuk</h5>
+    <select id="filter-read" class="form-select form-select-sm w-auto">
+      <option value="">Semua</option>
+      <option value="false">Belum Dibaca</option>
+      <option value="true">Sudah Dibaca</option>
+    </select>
+  </div>
+  <div class="list-group" id="messages-list">
+    <div class="text-center py-4 text-muted">Memuat...</div>
+  </div>
+  <nav class="mt-3 d-flex justify-content-end gap-2">
+    <button id="btn-prev" class="btn btn-sm btn-outline-secondary" disabled>‹</button>
+    <button id="btn-next" class="btn btn-sm btn-outline-secondary" disabled>›</button>
+  </nav>
+
+  <!-- Detail Modal -->
+  <div class="modal fade" id="msgModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header"><h6 class="modal-title" id="msg-subject"></h6><button class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <p class="mb-1"><strong>Dari:</strong> <span id="msg-sender"></span> — <span id="msg-email"></span></p>
+          <p class="mb-1"><strong>Telepon:</strong> <span id="msg-phone"></span></p>
+          <p class="mb-1 text-muted small" id="msg-time"></p>
+          <hr />
+          <p id="msg-content" class="mb-0" style="white-space:pre-line"></p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</AdminShell>
+
+<script>
+  import { apiFetch } from '../../../lib/api';
+  let page = 1;
+
+  async function loadMessages(p = 1) {
+    const isRead = (document.getElementById('filter-read') as HTMLSelectElement).value;
+    const qs = `page=${p}&limit=10${isRead !== '' ? '&isRead=' + isRead : ''}`;
+    try {
+      const data = await apiFetch<any>(`/api/v1/contacts/?${qs}`);
+      const list = document.getElementById('messages-list');
+      if (!list) return;
+
+      list.innerHTML = data.data.map((m: any) => `
+        <button class="list-group-item list-group-item-action${!m.isRead ? ' fw-semibold border-start border-primary border-4' : ''} btn-open-msg"
+          data-id="${m.id}" data-read="${m.isRead}"
+          data-subject="${m.subject ?? '(Tanpa Subjek)'}"
+          data-sender="${m.senderName}" data-email="${m.senderEmail ?? ''}"
+          data-phone="${m.senderPhone ?? ''}" data-time="${m.receivedAt}"
+          data-content="${encodeURIComponent(m.messageContent)}">
+          <div class="d-flex justify-content-between">
+            <span>${m.subject ?? '(Tanpa Subjek)'}</span>
+            <small class="text-muted">${new Date(m.receivedAt).toLocaleDateString('id-ID')}</small>
+          </div>
+          <small class="text-muted">${m.senderName} · ${m.senderEmail ?? ''}</small>
+          ${!m.isRead ? '<span class="badge bg-primary ms-1">Baru</span>' : ''}
+        </button>`).join('') || '<div class="text-center text-muted py-4">Tidak ada pesan</div>';
+
+      document.querySelectorAll('.btn-open-msg').forEach(btn => btn.addEventListener('click', async (e) => {
+        const target = e.currentTarget as HTMLButtonElement;
+        document.getElementById('msg-subject')!.textContent = target.dataset.subject!;
+        document.getElementById('msg-sender')!.textContent = target.dataset.sender!;
+        document.getElementById('msg-email')!.textContent = target.dataset.email!;
+        document.getElementById('msg-phone')!.textContent = target.dataset.phone!;
+        document.getElementById('msg-time')!.textContent = new Date(target.dataset.time!).toLocaleString('id-ID');
+        document.getElementById('msg-content')!.textContent = decodeURIComponent(target.dataset.content!);
+        
+        // @ts-ignore
+        const modal = new bootstrap.Modal(document.getElementById('msgModal'));
+        modal.show();
+
+        if (target.dataset.read === 'false') {
+          try {
+            await apiFetch(`/api/v1/contacts/${target.dataset.id}/read`, { method: 'PATCH' });
+            loadMessages(page);
+          } catch (err) {
+            console.error(err);
+          }
+        }
+      }));
+
+      const prevBtn = document.getElementById('btn-prev') as HTMLButtonElement;
+      const nextBtn = document.getElementById('btn-next') as HTMLButtonElement;
+      if (prevBtn) prevBtn.disabled = p <= 1;
+      if (nextBtn) nextBtn.disabled = data.data.length < 10;
+      page = p;
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  document.getElementById('filter-read')?.addEventListener('change', () => loadMessages(1));
+  document.getElementById('btn-prev')?.addEventListener('click', () => loadMessages(page - 1));
+  document.getElementById('btn-next')?.addEventListener('click', () => loadMessages(page + 1));
+  
+  document.addEventListener('DOMContentLoaded', () => loadMessages(1));
+  loadMessages(1);
+</script>

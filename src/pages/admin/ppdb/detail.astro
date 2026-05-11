@@ -1,0 +1,224 @@
+---
+// src/pages/admin/ppdb/[id].astro
+import AdminShell from '../../../layouts/AdminShell.astro';
+
+// This is a static route, but we'll use client-side fetching to get the data
+// since we're using 'static' output and don't want to pre-render every ID.
+// However, to make it work with Astro's dynamic routing, we need getStaticPaths 
+// or just use a fallback if it's SSR. Since it's static output, we'll use a 
+// workaround: a page that extracts ID from URL.
+---
+<AdminShell title="Detail Pendaftaran" activePage="ppdb">
+  <div class="mb-3"><a href="/admin/ppdb" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Kembali</a></div>
+
+  <div class="row g-4">
+    <!-- Student info card -->
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+          <span>Data Siswa</span>
+          <span id="reg-status-badge"></span>
+        </div>
+        <div class="card-body" id="student-info">
+          <div class="text-center py-4 text-muted">Memuat...</div>
+        </div>
+      </div>
+      <!-- Documents -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white fw-semibold">Dokumen</div>
+        <div class="card-body" id="documents-list">
+          <div class="text-center py-4 text-muted">Memuat...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status update panel -->
+    <div class="col-lg-5">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white fw-semibold">Ubah Status</div>
+        <div class="card-body">
+          <div id="status-alert"></div>
+          <label class="form-label">Status Pendaftaran</label>
+          <select id="new-status" class="form-select mb-3">
+            <option value="DRAFT">Draft</option>
+            <option value="PENDING_VERIFICATION">Menunggu Verifikasi</option>
+            <option value="VERIFIED">Terverifikasi</option>
+            <option value="ACCEPTED">Diterima</option>
+            <option value="REJECTED">Ditolak</option>
+          </select>
+          <button id="btn-update-status" class="btn btn-primary w-100">Simpan Status</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Document review modal -->
+  <div class="modal fade" id="docModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"><h6 class="modal-title">Review Dokumen</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <img id="doc-preview" src="" class="img-fluid rounded mb-3 d-block mx-auto" alt="Dokumen" style="max-height:400px;object-fit:contain">
+          <p><strong id="doc-type-label"></strong></p>
+          <div class="mb-3">
+            <label class="form-label">Status Dokumen</label>
+            <select id="doc-status" class="form-select">
+              <option value="PENDING">Pending</option>
+              <option value="VALID">Valid</option>
+              <option value="INVALID">Tidak Valid</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Catatan Admin</label>
+            <textarea id="doc-notes" class="form-control" rows="2" placeholder="Alasan jika tidak valid..."></textarea>
+          </div>
+          <input type="hidden" id="doc-id" />
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+          <button id="btn-save-doc" class="btn btn-primary">Simpan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</AdminShell>
+
+<script>
+  import { apiFetch } from '../../../lib/api';
+
+  // Get ID from URL /admin/ppdb/[id]
+  const regId = new URLSearchParams(window.location.search).get('id');
+
+  const statusBadge: Record<string, string> = { DRAFT:'secondary', PENDING_VERIFICATION:'warning', VERIFIED:'info', ACCEPTED:'success', REJECTED:'danger' };
+  const statusLabel: Record<string, string> = { DRAFT:'Draft', PENDING_VERIFICATION:'Menunggu', VERIFIED:'Terverifikasi', ACCEPTED:'Diterima', REJECTED:'Ditolak' };
+
+  async function loadRegistration() {
+    try {
+      const data = await apiFetch<any>(`/api/v1/registrations/${regId}`);
+      (document.getElementById('new-status') as HTMLSelectElement).value = data.registrationStatus;
+      const badgeEl = document.getElementById('reg-status-badge');
+      if (badgeEl) {
+        badgeEl.innerHTML = `<span class="badge bg-${statusBadge[data.registrationStatus] || 'secondary'}">${statusLabel[data.registrationStatus] || data.registrationStatus}</span>`;
+      }
+
+      const infoEl = document.getElementById('student-info');
+      if (infoEl) {
+        infoEl.innerHTML = `
+          <dl class="row mb-0">
+            <dt class="col-sm-5">No. Pendaftaran</dt><dd class="col-sm-7">${data.registrationNumber ?? '-'}</dd>
+            <dt class="col-sm-5">Nama Siswa</dt><dd class="col-sm-7">${data.studentFullName}</dd>
+            <dt class="col-sm-5">Program</dt><dd class="col-sm-7">${data.programChoice}</dd>
+            <dt class="col-sm-5">NISN</dt><dd class="col-sm-7">${data.nisn ?? '-'}</dd>
+            <dt class="col-sm-5">Tempat Lahir</dt><dd class="col-sm-7">${data.birthPlace ?? '-'}</dd>
+            <dt class="col-sm-5">Tanggal Lahir</dt><dd class="col-sm-7">${new Date(data.birthDate).toLocaleDateString('id-ID')}</dd>
+            <dt class="col-sm-5">Jenis Kelamin</dt><dd class="col-sm-7">${data.gender === 'MALE' ? 'Laki-laki' : 'Perempuan'}</dd>
+            <dt class="col-sm-5">Alamat</dt><dd class="col-sm-7">${data.domicileAddress ?? '-'}</dd>
+            <dt class="col-sm-5">Nama Ayah</dt><dd class="col-sm-7">${data.fatherName ?? '-'}</dd>
+            <dt class="col-sm-5">Nama Ibu</dt><dd class="col-sm-7">${data.motherName ?? '-'}</dd>
+            <dt class="col-sm-5">Pekerjaan Ortu</dt><dd class="col-sm-7">${data.parentsOccupation ?? '-'}</dd>
+            <dt class="col-sm-5">WhatsApp Ortu</dt><dd class="col-sm-7">${data.parentsWhatsapp ?? '-'}</dd>
+          </dl>`;
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function loadDocuments() {
+    try {
+      const data = await apiFetch<any>(`/api/v1/registrations/${regId}/documents`);
+      const docs = data.data ?? data;
+      const docStatusBadge: Record<string, string> = { PENDING:'warning', VALID:'success', INVALID:'danger' };
+      
+      const listEl = document.getElementById('documents-list');
+      if (!listEl) return;
+
+      if (docs.length === 0) {
+        listEl.innerHTML = '<p class="text-muted text-center py-3">Belum ada dokumen diunggah.</p>';
+        return;
+      }
+
+      listEl.innerHTML = docs.map((doc: any) => `
+        <div class="d-flex justify-content-between align-items-center p-3 border rounded mb-3">
+          <div>
+            <div class="fw-semibold small">${doc.documentType}</div>
+            <span class="badge bg-${docStatusBadge[doc.documentStatus] || 'secondary'}">${doc.documentStatus}</span>
+            ${doc.adminNotes ? `<div class="text-muted small mt-1">Note: ${doc.adminNotes}</div>` : ''}
+          </div>
+          <div class="d-flex gap-2">
+            <a href="${doc.fileUrl}" target="_blank" class="btn btn-sm btn-outline-secondary">Lihat</a>
+            <button class="btn btn-sm btn-outline-primary btn-review-doc"
+              data-id="${doc.id}" data-type="${doc.documentType}"
+              data-url="${doc.fileUrl}" data-status="${doc.documentStatus}"
+              data-notes="${doc.adminNotes ?? ''}">Review</button>
+          </div>
+        </div>`).join('');
+
+      document.querySelectorAll('.btn-review-doc').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const target = e.currentTarget as HTMLButtonElement;
+          (document.getElementById('doc-id') as HTMLInputElement).value = target.dataset.id!;
+          (document.getElementById('doc-type-label') as HTMLElement).textContent = target.dataset.type!;
+          (document.getElementById('doc-preview') as HTMLImageElement).src = target.dataset.url!;
+          (document.getElementById('doc-status') as HTMLSelectElement).value = target.dataset.status!;
+          (document.getElementById('doc-notes') as HTMLTextAreaElement).value = target.dataset.notes!;
+          // Using global bootstrap from layout
+          // @ts-ignore
+          const modal = new bootstrap.Modal(document.getElementById('docModal'));
+          modal.show();
+        });
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  document.getElementById('btn-save-doc')?.addEventListener('click', async () => {
+    const id = (document.getElementById('doc-id') as HTMLInputElement).value;
+    const btn = document.getElementById('btn-save-doc') as HTMLButtonElement;
+    btn.disabled = true;
+    try {
+      await apiFetch(`/api/v1/documents/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: (document.getElementById('doc-status') as HTMLSelectElement).value,
+          adminNotes: (document.getElementById('doc-notes') as HTMLTextAreaElement).value,
+        }),
+      });
+      // @ts-ignore
+      const modal = bootstrap.Modal.getInstance(document.getElementById('docModal'));
+      modal?.hide();
+      loadDocuments();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById('btn-update-status')?.addEventListener('click', async () => {
+    const btn = document.getElementById('btn-update-status') as HTMLButtonElement;
+    btn.disabled = true;
+    const alert = document.getElementById('status-alert');
+    if (!alert) return;
+    try {
+      await apiFetch(`/api/v1/registrations/${regId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: (document.getElementById('new-status') as HTMLSelectElement).value }),
+      });
+      alert.innerHTML = '<div class="alert alert-success py-2">Status berhasil diperbarui</div>';
+      loadRegistration();
+    } catch (err: any) {
+      alert.innerHTML = `<div class="alert alert-danger py-2">${err.message}</div>`;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadRegistration();
+    loadDocuments();
+  });
+  loadRegistration();
+  loadDocuments();
+</script>

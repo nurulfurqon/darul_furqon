@@ -1,0 +1,153 @@
+---
+// src/pages/admin/guru/index.astro
+import AdminShell from '../../../layouts/AdminShell.astro';
+---
+<AdminShell title="Guru & Staff" activePage="guru">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h5 class="mb-0">Guru & Staff</h5>
+    <button class="btn btn-primary btn-sm" id="btn-add"><i class="bi bi-plus-lg me-1"></i>Tambah</button>
+  </div>
+  <div class="row g-3" id="teachers-grid">
+    <div class="col-12 text-center py-4 text-muted">Memuat...</div>
+  </div>
+
+  <!-- Modal Add/Edit -->
+  <div class="modal fade" id="teacherModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"><h6 class="modal-title" id="modal-title">Tambah Guru</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <input type="hidden" id="teacher-id" />
+          <div class="mb-3"><label class="form-label">Nama Lengkap</label><input type="text" id="t-name" class="form-control" required /></div>
+          <div class="mb-3"><label class="form-label">Jabatan</label><input type="text" id="t-position" class="form-control" /></div>
+          <div class="mb-3"><label class="form-label">Tanggal Bergabung</label><input type="date" id="t-joindate" class="form-control" /></div>
+          <div class="mb-3">
+            <label class="form-label">Foto Profil</label>
+            <input type="file" id="t-photo-file" class="form-control" accept="image/*" />
+            <input type="hidden" id="t-photo-url" />
+            <img id="t-photo-preview" src="" class="mt-2 rounded-circle d-none" style="width:80px;height:80px;object-fit:cover" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+          <button id="btn-save-teacher" class="btn btn-primary">Simpan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</AdminShell>
+
+<script>
+  import { apiFetch, apiUpload } from '../../../lib/api';
+  
+  // @ts-ignore
+  let modal: any;
+
+  function getModal() {
+    if (!modal) {
+      const el = document.getElementById('teacherModal');
+      // @ts-ignore
+      if (el && typeof bootstrap !== 'undefined') modal = new bootstrap.Modal(el);
+    }
+    return modal;
+  }
+
+  async function load() {
+    try {
+      const data = await apiFetch<any>('/api/v1/teachers/');
+      const grid = document.getElementById('teachers-grid');
+      if (!grid) return;
+
+      grid.innerHTML = (data.data ?? data).map((t: any) => `
+        <div class="col-md-3">
+          <div class="card border-0 shadow-sm text-center p-3">
+            <img src="${t.profilePictureUrl || '/assets/img/user.svg'}" class="rounded-circle mx-auto mb-2" style="width:80px;height:80px;object-fit:cover">
+            <h6 class="mb-0 fw-bold">${t.fullName}</h6>
+            <small class="text-muted">${t.position}</small>
+            <div class="mt-3 d-flex gap-2">
+              <button class="btn btn-sm btn-outline-primary flex-fill btn-edit" data-t='${JSON.stringify(t)}'>Edit</button>
+              <button class="btn btn-sm btn-outline-danger flex-fill btn-del" data-id="${t.id}">Hapus</button>
+            </div>
+          </div>
+        </div>`).join('') || '<div class="col-12 text-center text-muted py-4">Belum ada data guru</div>';
+
+      document.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', (e) => {
+        const t = JSON.parse((e.currentTarget as HTMLButtonElement).dataset.t!);
+        (document.getElementById('teacher-id') as HTMLInputElement).value = t.id;
+        (document.getElementById('t-name') as HTMLInputElement).value = t.fullName;
+        (document.getElementById('t-position') as HTMLInputElement).value = t.position;
+        (document.getElementById('t-joindate') as HTMLInputElement).value = t.joinDate ? t.joinDate.split('T')[0] : '';
+        (document.getElementById('t-photo-url') as HTMLInputElement).value = t.profilePictureUrl || '';
+        const preview = document.getElementById('t-photo-preview') as HTMLImageElement;
+        if (t.profilePictureUrl) {
+          preview.src = t.profilePictureUrl;
+          preview.classList.remove('d-none');
+        } else {
+          preview.classList.add('d-none');
+        }
+        document.getElementById('modal-title')!.textContent = 'Edit Guru';
+        getModal()?.show();
+      }));
+
+      document.querySelectorAll('.btn-del').forEach(btn => btn.addEventListener('click', async (e) => {
+        if (!confirm('Hapus data guru ini?')) return;
+        const id = (e.currentTarget as HTMLButtonElement).dataset.id;
+        try {
+          await apiFetch(`/api/v1/teachers/${id}`, { method: 'DELETE' });
+          load();
+        } catch (err) {
+          alert('Gagal menghapus data guru');
+        }
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  document.getElementById('btn-add')?.addEventListener('click', () => {
+    (document.getElementById('teacher-id') as HTMLInputElement).value = '';
+    (document.getElementById('t-name') as HTMLInputElement).value = '';
+    (document.getElementById('t-position') as HTMLInputElement).value = '';
+    (document.getElementById('t-joindate') as HTMLInputElement).value = '';
+    (document.getElementById('t-photo-url') as HTMLInputElement).value = '';
+    document.getElementById('t-photo-preview')?.classList.add('d-none');
+    document.getElementById('modal-title')!.textContent = 'Tambah Guru';
+    getModal()?.show();
+  });
+
+  document.getElementById('t-photo-file')?.addEventListener('change', async (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    try {
+      const res = await apiUpload('teachers', file);
+      (document.getElementById('t-photo-url') as HTMLInputElement).value = res.url;
+      const preview = document.getElementById('t-photo-preview') as HTMLImageElement;
+      preview.src = res.url;
+      preview.classList.remove('d-none');
+    } catch (err: any) {
+      alert('Gagal mengunggah foto: ' + err.message);
+    }
+  });
+
+  document.getElementById('btn-save-teacher')?.addEventListener('click', async () => {
+    const id = (document.getElementById('teacher-id') as HTMLInputElement).value;
+    const body = {
+      fullName: (document.getElementById('t-name') as HTMLInputElement).value,
+      position: (document.getElementById('t-position') as HTMLInputElement).value,
+      joinDate: (document.getElementById('t-joindate') as HTMLInputElement).value || undefined,
+      profilePictureUrl: (document.getElementById('t-photo-url') as HTMLInputElement).value || undefined,
+    };
+
+    try {
+      if (id) await apiFetch(`/api/v1/teachers/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+      else await apiFetch('/api/v1/teachers/', { method: 'POST', body: JSON.stringify(body) });
+      getModal()?.hide();
+      load();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', load);
+  load();
+</script>

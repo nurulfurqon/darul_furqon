@@ -1,0 +1,142 @@
+---
+// src/pages/profil-program.astro
+import MainLayout from '../layouts/MainLayout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+---
+<MainLayout title="Profil & Program">
+  <Navbar activePage="profil" slot="navbar" />
+
+  <!-- ================= HERO ================= -->
+  <section class="profil-hero">
+    <img src="/assets/img/BG_Sekolah.svg" alt="Gedung Darul Furqon" class="hero-bg">
+    <div class="overlay"></div>
+    <div class="hero-content">
+      <h1>Profil & Program Pendidikan</h1>
+      <p>
+       Mewujudkan ekosistem pendidikan Islam yang modern, inklusif, dan 
+       berorientasi pada kemajuan peradaban melalui kurikulum berbasis Al-Quran.
+      </p>
+    </div>
+  </section>
+
+  <!-- ================= SEJARAH ================= -->
+  <section class="sejarah container">
+    <div class="row align-items-center">
+      <div class="col-md-5">
+        <div class="sejarah-image"></div>
+      </div>
+      <div class="col-md-7">
+        <h2>Sejarah Singkat</h2>
+        <p id="foundation-history">
+          Darul Furqon hadir sebagai lembaga pendidikan Islam
+          yang berkomitmen membangun generasi Qurani yang
+          unggul dalam ilmu dan akhlak.
+        </p>
+        <p>
+          Dengan kurikulum berbasis Al-Quran dan teknologi,
+          sekolah terus berkembang menjadi pusat pendidikan
+          modern yang tetap menjaga nilai-nilai Islam.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= VISI MISI ================= -->
+  <section class="visi-misi">
+    <div class="container">
+      <div class="section-heading">
+        <h2>Visi & Misi</h2>
+        <p>Landasan utama kami dalam mencetak generasi Rabbani.</p>
+      </div>
+      <div class="row g-4">
+        <div class="col-md-6">
+          <div class="visi-card">
+            <h3>Visi Sekolah</h3>
+            <p id="foundation-vision">
+              Menjadi pusat keunggulan pendidikan Islam di Indonesia
+              yang melahirkan generasi cerdas, berkarakter Qurani,
+              dan mampu memimpin perubahan di era global.
+            </p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="misi-card">
+            <h3>Misi Sekolah</h3>
+            <div id="foundation-mission">
+              <ul>
+                <li>Menanamkan nilai tauhid dan adab Islami.</li>
+                <li>Pembelajaran modern berbasis teknologi.</li>
+                <li>Mengembangkan bakat dan minat siswa.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TENAGA PENDIDIK ================= -->
+  <section class="guru">
+    <div class="container">
+      <div class="section-heading">
+        <h2>Tenaga Pendidik</h2>
+        <p>Guru profesional yang mendidik dengan penuh kasih sayang.</p>
+      </div>
+      <div id="teachers-list" class="guru-wrapper">
+        <!-- Dynamic content -->
+        <div class="col-12 text-center py-5">
+          <div class="spinner-border text-success" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Footer slot="footer" />
+</MainLayout>
+
+<script>
+  import { apiFetch } from '../lib/api';
+
+  async function loadFoundation() {
+    try {
+      const data = await apiFetch('/api/v1/foundation/');
+      if (data.vision) document.getElementById('foundation-vision').textContent = data.vision;
+      if (data.mission) {
+        const missionList = data.mission.split('\n').filter(m => m.trim()).map(m => `<li>${m.trim()}</li>`).join('');
+        document.getElementById('foundation-mission').innerHTML = `<ul>${missionList}</ul>`;
+      }
+      if (data.history) document.getElementById('foundation-history').textContent = data.history;
+    } catch {}
+  }
+
+  async function loadTeachers() {
+    try {
+      const data = await apiFetch('/api/v1/teachers/');
+      const container = document.getElementById('teachers-list');
+      if (!container || !data.data || data.data.length === 0) {
+        if (container) container.innerHTML = '<div class="col-12 text-center">Belum ada data guru.</div>';
+        return;
+      }
+      container.innerHTML = data.data.map(t => `
+        <div class="guru-item">
+          <div class="guru-foto" style="background-image: url('${t.profilePictureUrl || '/assets/img/user.svg'}'); background-size: cover; background-position: center;"></div>
+          <h4>${t.fullName}</h4>
+          <span>${t.position}</span>
+        </div>
+      `).join('');
+    } catch {
+      const container = document.getElementById('teachers-list');
+      if (container) container.innerHTML = '<div class="col-12 text-center text-danger">Gagal memuat data guru.</div>';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadFoundation();
+    loadTeachers();
+  });
+  loadFoundation();
+  loadTeachers();
+</script>

@@ -1,0 +1,73 @@
+---
+// src/pages/admin/pengguna/index.astro
+import AdminShell from '../../../layouts/AdminShell.astro';
+---
+<AdminShell title="Manajemen Pengguna" activePage="pengguna">
+  <h5 class="mb-4">Daftar Pengguna</h5>
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light"><tr>
+            <th>Nama</th><th>Email</th><th>Role</th><th>Status</th><th>Aksi</th>
+          </tr></thead>
+          <tbody id="users-table"><tr><td colspan="5" class="text-center py-4">Memuat...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <nav class="mt-3 d-flex justify-content-end gap-2">
+    <button id="btn-prev" class="btn btn-sm btn-outline-secondary" disabled>‹</button>
+    <button id="btn-next" class="btn btn-sm btn-outline-secondary" disabled>›</button>
+  </nav>
+</AdminShell>
+
+<script>
+  import { apiFetch } from '../../../lib/api';
+  let page = 1;
+
+  async function loadUsers(p = 1) {
+    try {
+      const data = await apiFetch<any>(`/api/v1/users/?page=${p}&limit=10`);
+      const tbody = document.getElementById('users-table');
+      if (!tbody) return;
+
+      tbody.innerHTML = data.data.map((u: any) => `
+        <tr>
+          <td>${u.name}</td>
+          <td>${u.email}</td>
+          <td><span class="badge bg-${u.role === 'ADMIN' ? 'primary' : 'secondary'}">${u.role}</span></td>
+          <td><span class="badge bg-${u.isActive ? 'success' : 'danger'}">${u.isActive ? 'Aktif' : 'Nonaktif'}</span></td>
+          <td>
+            <button class="btn btn-sm btn-outline-${u.isActive ? 'danger' : 'success'} btn-toggle-active" data-id="${u.id}" data-active="${u.isActive}">
+              ${u.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+            </button>
+          </td>
+        </tr>`).join('');
+
+      document.querySelectorAll('.btn-toggle-active').forEach(btn => btn.addEventListener('click', async (e) => {
+        const target = e.currentTarget as HTMLButtonElement;
+        try {
+          await apiFetch(`/api/v1/users/${target.dataset.id}/active`, { method: 'PATCH' });
+          loadUsers(page);
+        } catch (err) {
+          alert('Gagal mengubah status pengguna');
+        }
+      }));
+
+      const prevBtn = document.getElementById('btn-prev') as HTMLButtonElement;
+      const nextBtn = document.getElementById('btn-next') as HTMLButtonElement;
+      if (prevBtn) prevBtn.disabled = p <= 1;
+      if (nextBtn) nextBtn.disabled = data.data.length < 10;
+      page = p;
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  document.getElementById('btn-prev')?.addEventListener('click', () => loadUsers(page - 1));
+  document.getElementById('btn-next')?.addEventListener('click', () => loadUsers(page + 1));
+  
+  document.addEventListener('DOMContentLoaded', () => loadUsers(1));
+  loadUsers(1);
+</script>

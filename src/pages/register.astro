@@ -1,0 +1,105 @@
+---
+// src/pages/register.astro
+import MainLayout from '../layouts/MainLayout.astro';
+---
+<MainLayout title="Daftar Akun">
+  <section class="login-page">
+    <div class="login-left">
+      <a href="/" class="back-btn"><i class="bi bi-arrow-left"></i></a>
+      <div class="overlay"></div>
+      <div class="left-content">
+        <div class="logo-area">
+          <div class="logo-box"><img src="/assets/icon/logo_df.svg" alt=""></div>
+          <h2>Darul - Furqon</h2>
+        </div>
+        <span class="badge-school">Portal PPDB Online</span>
+        <h1>Buat Akun Baru</h1>
+        <p>Daftar sekarang untuk memulai proses pendaftaran putra-putri Anda.</p>
+
+      </div>
+    </div>
+
+    <div class="login-right">
+      <div class="auth-card">
+        <div class="auth-tabs">
+          <a href="/login" class="tab text-decoration-none text-center pt-2">Sign In</a>
+          <button class="tab active">Sign Up</button>
+        </div>
+
+        <div class="auth-header">
+          <h2>Registrasi Akun</h2>
+          <p>Lengkapi data di bawah untuk membuat akun baru.</p>
+        </div>
+
+        <div id="reg-error" class="alert alert-danger d-none"></div>
+        <div id="reg-success" class="alert alert-success d-none">
+          Akun berhasil dibuat! <a href="/login" class="fw-bold">Login sekarang</a>
+        </div>
+
+        <form id="register-form">
+          <div class="input-group-custom">
+            <label>Nama Lengkap</label>
+            <div class="input-box">
+              <i class="bi bi-person"></i>
+              <input type="text" name="name" required placeholder="Masukkan nama lengkap">
+            </div>
+          </div>
+
+          <div class="input-group-custom">
+            <label>Email</label>
+            <div class="input-box">
+              <i class="bi bi-envelope"></i>
+              <input type="email" name="email" required placeholder="Masukkan email">
+            </div>
+          </div>
+
+          <div class="input-group-custom">
+            <label>Password</label>
+            <div class="input-box">
+              <i class="bi bi-lock"></i>
+              <input type="password" name="password" required minlength="8" placeholder="Minimal 8 karakter">
+            </div>
+          </div>
+
+          <button type="submit" class="btn-login border-0 w-100 mt-4" id="btn-register">Daftar</button>
+
+          <div class="switch-auth">
+            Sudah punya akun?
+            <a href="/login">Login di sini</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+</MainLayout>
+
+<script>
+  import { register } from '../lib/auth';
+
+  document.getElementById('register-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const errEl = document.getElementById('reg-error');
+    const sucEl = document.getElementById('reg-success');
+    const btn = document.getElementById('btn-register') as HTMLButtonElement;
+    
+    if (btn) btn.disabled = true;
+    if (errEl) {
+      errEl.textContent = '';
+      errEl.classList.add('d-none');
+    }
+    if (sucEl) sucEl.classList.add('d-none');
+
+    try {
+      await register(form.name.value, form.email.value, form.password.value);
+      form.style.display = 'none';
+      if (sucEl) sucEl.classList.remove('d-none');
+    } catch (err: any) {
+      if (errEl) {
+        errEl.textContent = err.message;
+        errEl.classList.remove('d-none');
+      }
+      if (btn) btn.disabled = false;
+    }
+  });
+</script>
