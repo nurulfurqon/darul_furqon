@@ -57,7 +57,7 @@ import AdminShell from '../../layouts/AdminShell.astro';
   import { apiFetch } from '../../lib/api';
 
   const statusBadge: Record<string, string> = {
-    DRAFT: 'secondary', PENDING_VERIFICATION: 'warning',
+    DRAFT: 'white text-dark border', PENDING_VERIFICATION: 'warning',
     VERIFIED: 'info', ACCEPTED: 'success', REJECTED: 'danger'
   };
   const statusLabel: Record<string, string> = {

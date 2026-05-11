@@ -89,7 +89,7 @@ import AdminShell from '../../../layouts/AdminShell.astro';
   // Get ID from URL /admin/ppdb/[id]
   const regId = new URLSearchParams(window.location.search).get('id');
 
-  const statusBadge: Record<string, string> = { DRAFT:'secondary', PENDING_VERIFICATION:'warning', VERIFIED:'info', ACCEPTED:'success', REJECTED:'danger' };
+  const statusBadge: Record<string, string> = { DRAFT:'white text-dark border', PENDING_VERIFICATION:'warning', VERIFIED:'info', ACCEPTED:'success', REJECTED:'danger' };
   const statusLabel: Record<string, string> = { DRAFT:'Draft', PENDING_VERIFICATION:'Menunggu', VERIFIED:'Terverifikasi', ACCEPTED:'Diterima', REJECTED:'Ditolak' };
 
   async function loadRegistration() {
