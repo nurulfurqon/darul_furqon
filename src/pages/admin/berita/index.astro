@@ -35,7 +35,7 @@ import AdminShell from '../../../layouts/AdminShell.astro';
               <small class="text-muted">${new Date(n.publishedDate).toLocaleDateString('id-ID')}</small>
             </div>
             <div class="card-footer bg-white border-0 d-flex gap-2 pb-3">
-              <a href="/admin/berita/${n.id}" class="btn btn-sm btn-outline-primary flex-fill">Edit</a>
+              <a href="/admin/berita/edit?id=${n.id}" class="btn btn-sm btn-outline-primary flex-fill">Edit</a>
               <button class="btn btn-sm btn-outline-danger flex-fill btn-delete" data-id="${n.id}">Hapus</button>
             </div>
           </div>

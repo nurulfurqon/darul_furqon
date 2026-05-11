@@ -30,7 +30,7 @@ import AdminShell from '../../../layouts/AdminShell.astro';
 
 <script>
   import { apiFetch, apiUpload } from '../../../lib/api';
-  const id = window.location.pathname.split('/').pop();
+  const id = new URLSearchParams(window.location.search).get('id');
 
   async function loadNews() {
     try {

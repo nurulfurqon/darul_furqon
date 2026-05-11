@@ -43,6 +43,15 @@ import AdminShell from '../../../layouts/AdminShell.astro';
   // @ts-ignore
   let modal: any;
 
+  function getModal() {
+    if (!modal) {
+      const el = document.getElementById('teacherModal');
+      // @ts-ignore
+      if (el && typeof bootstrap !== 'undefined') modal = new bootstrap.Modal(el);
+    }
+    return modal;
+  }
+
   async function load() {
     try {
       const data = await apiFetch<any>('/api/v1/teachers/');
@@ -77,14 +86,18 @@ import AdminShell from '../../../layouts/AdminShell.astro';
           preview.classList.add('d-none');
         }
         document.getElementById('modal-title')!.textContent = 'Edit Guru';
-        modal.show();
+        getModal()?.show();
       }));
 
       document.querySelectorAll('.btn-del').forEach(btn => btn.addEventListener('click', async (e) => {
         if (!confirm('Hapus data guru ini?')) return;
         const id = (e.currentTarget as HTMLButtonElement).dataset.id;
-        await apiFetch(`/api/v1/teachers/${id}`, { method: 'DELETE' });
-        load();
+        try {
+          await apiFetch(`/api/v1/teachers/${id}`, { method: 'DELETE' });
+          load();
+        } catch (err) {
+          alert('Gagal menghapus data guru');
+        }
       }));
     } catch (err) {
       console.error(err);
@@ -99,17 +112,21 @@ import AdminShell from '../../../layouts/AdminShell.astro';
     (document.getElementById('t-photo-url') as HTMLInputElement).value = '';
     document.getElementById('t-photo-preview')?.classList.add('d-none');
     document.getElementById('modal-title')!.textContent = 'Tambah Guru';
-    modal.show();
+    getModal()?.show();
   });
 
   document.getElementById('t-photo-file')?.addEventListener('change', async (e) => {
     const file = (e.target as HTMLInputElement).files?.[0];
     if (!file) return;
-    const res = await apiUpload('teachers', file);
-    (document.getElementById('t-photo-url') as HTMLInputElement).value = res.url;
-    const preview = document.getElementById('t-photo-preview') as HTMLImageElement;
-    preview.src = res.url;
-    preview.classList.remove('d-none');
+    try {
+      const res = await apiUpload('teachers', file);
+      (document.getElementById('t-photo-url') as HTMLInputElement).value = res.url;
+      const preview = document.getElementById('t-photo-preview') as HTMLImageElement;
+      preview.src = res.url;
+      preview.classList.remove('d-none');
+    } catch (err: any) {
+      alert('Gagal mengunggah foto: ' + err.message);
+    }
   });
 
   document.getElementById('btn-save-teacher')?.addEventListener('click', async () => {
@@ -124,17 +141,13 @@ import AdminShell from '../../../layouts/AdminShell.astro';
     try {
       if (id) await apiFetch(`/api/v1/teachers/${id}`, { method: 'PUT', body: JSON.stringify(body) });
       else await apiFetch('/api/v1/teachers/', { method: 'POST', body: JSON.stringify(body) });
-      modal.hide();
+      getModal()?.hide();
       load();
     } catch (err: any) {
       alert(err.message);
     }
   });
 
-  document.addEventListener('DOMContentLoaded', () => {
-    // @ts-ignore
-    modal = new bootstrap.Modal(document.getElementById('teacherModal'));
-    load();
-  });
+  document.addEventListener('DOMContentLoaded', load);
   load();
 </script>

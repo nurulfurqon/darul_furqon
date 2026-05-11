@@ -64,7 +64,7 @@ import AdminShell from '../../../layouts/AdminShell.astro';
               <td>${r.programChoice}</td>
               <td><span class="badge bg-${statusBadge[r.registrationStatus] || 'secondary'}">${statusLabel[r.registrationStatus] || r.registrationStatus}</span></td>
               <td>${new Date(r.registrationDate).toLocaleDateString('id-ID')}</td>
-              <td><a href="/admin/ppdb/${r.id}" class="btn btn-sm btn-outline-primary">Detail</a></td>
+              <td><a href="/admin/ppdb/detail?id=${r.id}" class="btn btn-sm btn-outline-primary">Detail</a></td>
             </tr>`).join('');
 
       const total = data.total ?? data.data.length;

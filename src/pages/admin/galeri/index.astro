@@ -50,6 +50,15 @@ import AdminShell from '../../../layouts/AdminShell.astro';
   // @ts-ignore
   let modal: any;
 
+  function getModal() {
+    if (!modal) {
+      const el = document.getElementById('galleryModal');
+      // @ts-ignore
+      if (el && typeof bootstrap !== 'undefined') modal = new bootstrap.Modal(el);
+    }
+    return modal;
+  }
+
   async function load() {
     try {
       const data = await apiFetch<any>('/api/v1/gallery/');
@@ -73,8 +82,12 @@ import AdminShell from '../../../layouts/AdminShell.astro';
       document.querySelectorAll('.btn-del').forEach(btn => btn.addEventListener('click', async (e) => {
         if (!confirm('Hapus media ini?')) return;
         const id = (e.currentTarget as HTMLButtonElement).dataset.id;
-        await apiFetch(`/api/v1/gallery/${id}`, { method: 'DELETE' });
-        load();
+        try {
+          await apiFetch(`/api/v1/gallery/${id}`, { method: 'DELETE' });
+          load();
+        } catch (err) {
+          alert('Gagal menghapus media');
+        }
       }));
     } catch (err) {
       console.error(err);
@@ -85,52 +98,61 @@ import AdminShell from '../../../layouts/AdminShell.astro';
     (document.getElementById('g-title') as HTMLInputElement).value = '';
     (document.getElementById('g-url') as HTMLInputElement).value = '';
     document.getElementById('g-preview-container')?.classList.add('d-none');
-    modal.show();
+    getModal()?.show();
   });
 
   document.getElementById('g-file')?.addEventListener('change', async (e) => {
     const file = (e.target as HTMLInputElement).files?.[0];
     if (!file) return;
-    const res = await apiUpload('gallery', file);
-    (document.getElementById('g-url') as HTMLInputElement).value = res.url;
     
-    const container = document.getElementById('g-preview-container');
-    const imgPreview = document.getElementById('g-img-preview') as HTMLImageElement;
-    const vidPreview = document.getElementById('g-vid-preview') as HTMLVideoElement;
-    const type = (document.getElementById('g-type') as HTMLSelectElement).value;
+    try {
+      const res = await apiUpload('gallery', file);
+      (document.getElementById('g-url') as HTMLInputElement).value = res.url;
+      
+      const container = document.getElementById('g-preview-container');
+      const imgPreview = document.getElementById('g-img-preview') as HTMLImageElement;
+      const vidPreview = document.getElementById('g-vid-preview') as HTMLVideoElement;
+      const type = (document.getElementById('g-type') as HTMLSelectElement).value;
 
-    container?.classList.remove('d-none');
-    if (type === 'PHOTO') {
-      imgPreview.src = res.url;
-      imgPreview.classList.remove('d-none');
-      vidPreview.classList.add('d-none');
-    } else {
-      vidPreview.src = res.url;
-      vidPreview.classList.remove('d-none');
-      imgPreview.classList.add('d-none');
+      container?.classList.remove('d-none');
+      if (type === 'PHOTO') {
+        imgPreview.src = res.url;
+        imgPreview.classList.remove('d-none');
+        vidPreview.classList.add('d-none');
+      } else {
+        vidPreview.src = res.url;
+        vidPreview.classList.remove('d-none');
+        imgPreview.classList.add('d-none');
+      }
+    } catch (err: any) {
+      alert('Gagal mengunggah media: ' + err.message);
     }
   });
 
   document.getElementById('btn-save-gallery')?.addEventListener('click', async () => {
+    const title = (document.getElementById('g-title') as HTMLInputElement).value;
+    const url = (document.getElementById('g-url') as HTMLInputElement).value;
+    
+    if (!title || !url) {
+      alert('Harap isi judul dan unggah media');
+      return;
+    }
+
     const body = {
-      activityTitle: (document.getElementById('g-title') as HTMLInputElement).value,
+      activityTitle: title,
       mediaType: (document.getElementById('g-type') as HTMLSelectElement).value,
-      fileUrl: (document.getElementById('g-url') as HTMLInputElement).value,
+      fileUrl: url,
     };
 
     try {
       await apiFetch('/api/v1/gallery/', { method: 'POST', body: JSON.stringify(body) });
-      modal.hide();
+      getModal()?.hide();
       load();
     } catch (err: any) {
       alert(err.message);
     }
   });
 
-  document.addEventListener('DOMContentLoaded', () => {
-    // @ts-ignore
-    modal = new bootstrap.Modal(document.getElementById('galleryModal'));
-    load();
-  });
+  document.addEventListener('DOMContentLoaded', load);
   load();
 </script>

@@ -88,7 +88,7 @@ import AdminShell from '../../layouts/AdminShell.astro';
       if (recentEl) {
         recentEl.innerHTML = recent.map((r: any) => `
           <tr>
-            <td><a href="/admin/ppdb/${r.id}" class="text-decoration-none fw-medium text-primary">${r.registrationNumber ?? '-'}</a></td>
+            <td><a href="/admin/ppdb/detail?id=${r.id}" class="text-decoration-none fw-medium text-primary">${r.registrationNumber ?? '-'}</a></td>
             <td>${r.studentFullName}</td>
             <td>${r.programChoice}</td>
             <td><span class="badge bg-${statusBadge[r.registrationStatus] || 'secondary'}">${statusLabel[r.registrationStatus] || r.registrationStatus}</span></td>
