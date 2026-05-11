@@ -178,13 +178,17 @@ body{
     display: inline-block;
 
     background: white;
-    color: #666;
+    color: #18c5b5;
 
     padding: 10px 18px;
     border-radius: 30px;
 
     margin-bottom: 30px;
     font-size: 14px;
+}
+
+.badge[class*="bg-"] {
+    color: white !important;
 }
 
 .hero-text h1{
@@ -720,7 +724,7 @@ footer{
 .hero-badge{
     display: inline-block;
 
-    background: rgba(24,197,181,0.2);
+    background: white;
     color: #18c5b5;
 
     padding: 8px 18px;
@@ -1197,7 +1201,8 @@ footer{
 .badge-school{
     display: inline-block;
 
-    background: rgba(255,255,255,0.12);
+    background: white;
+    color: #18c5b5;
 
     padding: 10px 18px;
 
@@ -1205,9 +1210,8 @@ footer{
 
     margin-bottom: 25px;
 
-    backdrop-filter: blur(10px);
-
     font-size: 14px;
+    font-weight: 600;
 }
 
 
@@ -1631,10 +1635,10 @@ footer{
     color: white;
 }
 
-.hero-badge{
+.hero-badge, .badge-school{
     display: inline-block;
 
-    background: rgba(24,197,181,0.15);
+    background: white;
 
     color: #18c5b5;
 
